@@ -1,5 +1,5 @@
 
-# SK-Creative
+# ExportSlidesWithDPI_PPT
 
 > 一款用于 PowerPoint 的自定义导出插件，支持以高 DPI 导出指定页码或当前页的图片。
 
