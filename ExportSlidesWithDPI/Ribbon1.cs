@@ -1,4 +1,4 @@
-﻿using Microsoft.Office.Interop.PowerPoint;
+using Microsoft.Office.Interop.PowerPoint;
 using Microsoft.Office.Tools.Ribbon;
 using System;
 using System.Collections.Generic;
@@ -6,6 +6,8 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
+using System.Threading.Tasks;
+using System.Threading;
 using PowerPoint = Microsoft.Office.Interop.PowerPoint;
 
 namespace ExportSlidesWithDPIDoing
@@ -17,6 +19,8 @@ namespace ExportSlidesWithDPIDoing
         private string exportFormat = "jpg";
         private string saveFolderPath = string.Empty;
         private List<int> selectedPages = new List<int>();
+        private bool isExporting = false;
+        private ProgressForm progressForm;
 
         #region Ribbon 初始化
         private void Ribbon1_Load(object sender, RibbonUIEventArgs e)
@@ -42,7 +46,7 @@ namespace ExportSlidesWithDPIDoing
             comboBox1.Text = currentDPI.ToString();
 
             comboBox2.Items.Clear();
-            string[] formats = { "png", "jpg", "bmp" };
+            string[] formats = { "png", "jpg", "bmp", "tif" };
             foreach (string fmt in formats)
             {
                 var item = Factory.CreateRibbonDropDownItem();
@@ -106,13 +110,13 @@ namespace ExportSlidesWithDPIDoing
         private void ComboBox2_TextChanged(object sender, RibbonControlEventArgs e)
         {
             var format = comboBox2.Text.ToLower();
-            if (new[] { "png", "jpg", "bmp" }.Contains(format))
+            if (new[] { "png", "jpg", "bmp", "tif" }.Contains(format))
             {
                 exportFormat = format;
             }
             else
             {
-                MessageBox.Show("仅支持 PNG/JPG/BMP 格式", "格式错误",
+                MessageBox.Show("仅支持 PNG/JPG/BMP/TIF 格式", "格式错误",
                               MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 comboBox2.Text = exportFormat;
             }
@@ -209,8 +213,15 @@ namespace ExportSlidesWithDPIDoing
             return pages.OrderBy(p => p).ToList();
         }
 
-        private void Button2_Click(object sender, RibbonControlEventArgs e)
+        private async void Button2_Click(object sender, RibbonControlEventArgs e)
         {
+            if (isExporting)
+            {
+                MessageBox.Show("正在导出中，请等待当前任务完成", "导出中",
+                                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             if (string.IsNullOrEmpty(saveFolderPath))
             {
                 MessageBox.Show("请先选择保存路径！", "路径未设置",
@@ -220,6 +231,7 @@ namespace ExportSlidesWithDPIDoing
 
             try
             {
+                isExporting = true;
                 var pres = app.ActivePresentation;
                 int totalSlides = pres.Slides.Count;
 
@@ -232,12 +244,39 @@ namespace ExportSlidesWithDPIDoing
                     return;
                 }
 
+                // 创建进度窗体
+                progressForm = new ProgressForm();
+                progressForm.TotalSlides = selectedPages.Count;
+                progressForm.Show();
+
                 int exportedCount = 0;
+                var tasks = new List<Task>();
+
+                // 根据DPI值决定是否使用并行处理
+                int maxConcurrentTasks = currentDPI >= 600 ? 1 : Environment.ProcessorCount;
+                var semaphore = new SemaphoreSlim(maxConcurrentTasks);
+
                 foreach (int slideNumber in selectedPages)
                 {
-                    if (ExportSingleSlide(pres, slideNumber))
-                        exportedCount++;
+                    await semaphore.WaitAsync();
+                    tasks.Add(Task.Run(async () =>
+                    {
+                        try
+                        {
+                            if (await ExportSlideAsync(pres, slideNumber))
+                            {
+                                exportedCount++;
+                            }
+                        }
+                        finally
+                        {
+                            semaphore.Release();
+                        }
+                    }));
                 }
+
+                await Task.WhenAll(tasks);
+                progressForm.Close();
 
                 MessageBox.Show($"成功导出 {exportedCount}/{selectedPages.Count} 张幻灯片", "导出完成",
                                 MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -247,12 +286,17 @@ namespace ExportSlidesWithDPIDoing
                 MessageBox.Show($"导出失败：{ex.Message}", "严重错误",
                                 MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+            finally
+            {
+                isExporting = false;
+                if (progressForm != null && !progressForm.IsDisposed)
+                {
+                    progressForm.Close();
+                }
+            }
         }
-        #endregion
 
-        #region 核心功能
-
-        private bool ExportSingleSlide(Presentation pres, int slideNumber)
+        private async Task<bool> ExportSlideAsync(PowerPoint.Presentation pres, int slideNumber)
         {
             try
             {
@@ -269,7 +313,118 @@ namespace ExportSlidesWithDPIDoing
                 int outputWidth = (int)(baseWidth * currentDPI / 72.0);
                 int outputHeight = (int)(baseHeight * currentDPI / 72.0);
 
-                slide.Export(fullPath, exportFormat.ToUpper(), outputWidth, outputHeight);
+                // 对于高DPI导出，使用临时文件和内存优化
+                if (currentDPI >= 600)
+                {
+                    string tempPath = Path.Combine(Path.GetTempPath(), $"temp_{Guid.NewGuid()}.{exportFormat}");
+                    try
+                    {
+                        // 使用异步方式导出
+                        await Task.Run(() =>
+                        {
+                            slide.Export(tempPath, exportFormat.ToUpper(), outputWidth, outputHeight);
+                        });
+
+                        // 异步移动文件
+                        await Task.Run(() =>
+                        {
+                            if (File.Exists(fullPath))
+                            {
+                                File.Delete(fullPath);
+                            }
+                            File.Move(tempPath, fullPath);
+                        });
+
+                        // 更新进度
+                        if (progressForm != null && !progressForm.IsDisposed)
+                        {
+                            progressForm.Invoke((MethodInvoker)delegate
+                            {
+                                progressForm.UpdateProgress();
+                            });
+                        }
+                    }
+                    finally
+                    {
+                        if (File.Exists(tempPath))
+                        {
+                            File.Delete(tempPath);
+                        }
+                    }
+                }
+                else
+                {
+                    await Task.Run(() =>
+                    {
+                        slide.Export(fullPath, exportFormat.ToUpper(), outputWidth, outputHeight);
+                    });
+
+                    if (progressForm != null && !progressForm.IsDisposed)
+                    {
+                        progressForm.Invoke((MethodInvoker)delegate
+                        {
+                            progressForm.UpdateProgress();
+                        });
+                    }
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"幻灯片 {slideNumber} 导出失败：{ex.Message}", "导出错误",
+                              MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+        }
+        #endregion
+
+        #region 核心功能
+
+        private bool ExportSlide(PowerPoint.Presentation pres, int slideNumber)
+        {
+            try
+            {
+                if (slideNumber < 1 || slideNumber > pres.Slides.Count)
+                    return false;
+
+                var slide = pres.Slides[slideNumber];
+                int baseWidth = (int)pres.PageSetup.SlideWidth;
+                int baseHeight = (int)pres.PageSetup.SlideHeight;
+
+                string fileName = $"{Path.GetFileNameWithoutExtension(pres.Name)}_Slide{slideNumber}_{DateTime.Now:yyyyMMddHHmmss}.{exportFormat}";
+                string fullPath = Path.Combine(saveFolderPath, fileName);
+
+                // 优化高DPI导出性能
+                int outputWidth = (int)(baseWidth * currentDPI / 72.0);
+                int outputHeight = (int)(baseHeight * currentDPI / 72.0);
+
+                // 对于高DPI导出，使用临时文件进行优化
+                if (currentDPI >= 600)
+                {
+                    string tempPath = Path.Combine(Path.GetTempPath(), $"temp_{Guid.NewGuid()}.{exportFormat}");
+                    try
+                    {
+                        // 先导出到临时文件
+                        slide.Export(tempPath, exportFormat.ToUpper(), outputWidth, outputHeight);
+                        // 然后移动到目标位置
+                        if (File.Exists(fullPath))
+                        {
+                            File.Delete(fullPath);
+                        }
+                        File.Move(tempPath, fullPath);
+                    }
+                    finally
+                    {
+                        if (File.Exists(tempPath))
+                        {
+                            File.Delete(tempPath);
+                        }
+                    }
+                }
+                else
+                {
+                    slide.Export(fullPath, exportFormat.ToUpper(), outputWidth, outputHeight);
+                }
                 return true;
             }
             catch (Exception ex)
@@ -291,9 +446,57 @@ namespace ExportSlidesWithDPIDoing
         {
             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
             {
-                FileName = "https://github.com/ShikunSun/PowerPointVSTOPlugins",
+                FileName = "https://github.com/groele/ExportSlidesWithDPI_PPT",
                 UseShellExecute = true
             });
+        }
+    }
+
+    public class ProgressForm : Form
+    {
+        private ProgressBar progressBar;
+        private Label statusLabel;
+        public int TotalSlides { get; set; }
+        private int currentProgress = 0;
+
+        public ProgressForm()
+        {
+            InitializeComponents();
+        }
+
+        private void InitializeComponents()
+        {
+            this.Text = "导出进度";
+            this.Size = new System.Drawing.Size(400, 150);
+            this.FormBorderStyle = FormBorderStyle.FixedDialog;
+            this.StartPosition = FormStartPosition.CenterScreen;
+            this.MaximizeBox = false;
+            this.MinimizeBox = false;
+
+            progressBar = new ProgressBar
+            {
+                Location = new System.Drawing.Point(20, 20),
+                Size = new System.Drawing.Size(350, 30),
+                Maximum = 100
+            };
+
+            statusLabel = new Label
+            {
+                Location = new System.Drawing.Point(20, 60),
+                Size = new System.Drawing.Size(350, 20),
+                Text = "准备导出..."
+            };
+
+            this.Controls.Add(progressBar);
+            this.Controls.Add(statusLabel);
+        }
+
+        public void UpdateProgress()
+        {
+            currentProgress++;
+            int percentage = (int)((float)currentProgress / TotalSlides * 100);
+            progressBar.Value = percentage;
+            statusLabel.Text = $"正在导出... {currentProgress}/{TotalSlides} ({percentage}%)";
         }
     }
 }
