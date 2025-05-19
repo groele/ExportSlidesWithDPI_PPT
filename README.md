@@ -49,9 +49,10 @@
 
 
 如果本插件对您有所助益，恳请在 GitHub 仓库点亮 ⭐ 并予以支持捐赠；您的鼓励将成为我持续迭代和完善插件的不竭动力。
-![328234138c4abfc6be098e31be4584d](https://github.com/user-attachments/assets/115e2bed-d967-492b-a249-a8feefee3b64)
 
-
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/115e2bed-d967-492b-a249-a8feefee3b64/328234138c4abfc6be098e31be4584d" width="50%" />
+</p>
 
 ## 技术栈
 
