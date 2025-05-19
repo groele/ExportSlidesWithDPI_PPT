@@ -47,6 +47,12 @@
 
 该项目由 [Shikun](mailto:shikun.creative@gmail.com) 开发，旨在满足在学术演示中需要高质量幻灯片图片的需求。通过自定义开发，提供了更灵活和高效的导出功能。
 
+
+如果本插件对您有所助益，恳请在 GitHub 仓库点亮 ⭐ 并予以支持捐赠；您的鼓励将成为我持续迭代和完善插件的不竭动力。
+![328234138c4abfc6be098e31be4584d](https://github.com/user-attachments/assets/115e2bed-d967-492b-a249-a8feefee3b64)
+
+
+
 ## 技术栈
 
 - **编程语言**：C#
