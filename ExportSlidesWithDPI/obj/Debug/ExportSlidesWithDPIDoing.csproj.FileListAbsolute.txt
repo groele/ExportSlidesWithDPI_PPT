@@ -11,3 +11,16 @@ C:\Users\gro_e\source\repos\ExportSlidesWithDPIDoing\obj\Debug\ExportSlidesWithD
 C:\Users\gro_e\source\repos\ExportSlidesWithDPIDoing\obj\Debug\ExportSl.D15134FA.Up2Date
 C:\Users\gro_e\source\repos\ExportSlidesWithDPIDoing\obj\Debug\ExportSlidesWithDPIDoing.dll
 C:\Users\gro_e\source\repos\ExportSlidesWithDPIDoing\obj\Debug\ExportSlidesWithDPIDoing.pdb
+C:\Users\gro_e\Desktop\ExportSlidesWithDPI_PPT-main\ExportSlidesWithDPI_PPT-main\ExportSlidesWithDPI\bin\Debug\ExportSlidesWithDPIDoing.dll
+C:\Users\gro_e\Desktop\ExportSlidesWithDPI_PPT-main\ExportSlidesWithDPI_PPT-main\ExportSlidesWithDPI\bin\Debug\ExportSlidesWithDPIDoing.pdb
+C:\Users\gro_e\Desktop\ExportSlidesWithDPI_PPT-main\ExportSlidesWithDPI_PPT-main\ExportSlidesWithDPI\bin\Debug\ExportSlidesWithDPIDoing.dll.manifest
+C:\Users\gro_e\Desktop\ExportSlidesWithDPI_PPT-main\ExportSlidesWithDPI_PPT-main\ExportSlidesWithDPI\bin\Debug\ExportSlidesWithDPIDoing.vsto
+C:\Users\gro_e\Desktop\ExportSlidesWithDPI_PPT-main\ExportSlidesWithDPI_PPT-main\ExportSlidesWithDPI\bin\Debug\Microsoft.Office.Tools.Common.v4.0.Utilities.dll
+C:\Users\gro_e\Desktop\ExportSlidesWithDPI_PPT-main\ExportSlidesWithDPI_PPT-main\ExportSlidesWithDPI\obj\Debug\ExportSlidesWithDPIDoing.csproj.AssemblyReference.cache
+C:\Users\gro_e\Desktop\ExportSlidesWithDPI_PPT-main\ExportSlidesWithDPI_PPT-main\ExportSlidesWithDPI\obj\Debug\ExportSlidesWithDPIDoing.Properties.Resources.resources
+C:\Users\gro_e\Desktop\ExportSlidesWithDPI_PPT-main\ExportSlidesWithDPI_PPT-main\ExportSlidesWithDPI\obj\Debug\ExportSlidesWithDPIDoing.Ribbon1.resources
+C:\Users\gro_e\Desktop\ExportSlidesWithDPI_PPT-main\ExportSlidesWithDPI_PPT-main\ExportSlidesWithDPI\obj\Debug\ExportSlidesWithDPIDoing.csproj.GenerateResource.cache
+C:\Users\gro_e\Desktop\ExportSlidesWithDPI_PPT-main\ExportSlidesWithDPI_PPT-main\ExportSlidesWithDPI\obj\Debug\ExportSlidesWithDPIDoing.csproj.CoreCompileInputs.cache
+C:\Users\gro_e\Desktop\ExportSlidesWithDPI_PPT-main\ExportSlidesWithDPI_PPT-main\ExportSlidesWithDPI\obj\Debug\ExportSl.D15134FA.Up2Date
+C:\Users\gro_e\Desktop\ExportSlidesWithDPI_PPT-main\ExportSlidesWithDPI_PPT-main\ExportSlidesWithDPI\obj\Debug\ExportSlidesWithDPIDoing.dll
+C:\Users\gro_e\Desktop\ExportSlidesWithDPI_PPT-main\ExportSlidesWithDPI_PPT-main\ExportSlidesWithDPI\obj\Debug\ExportSlidesWithDPIDoing.pdb
