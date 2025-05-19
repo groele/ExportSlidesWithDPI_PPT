@@ -1,0 +1,13 @@
+C:\Users\gro_e\source\repos\ExportSlidesWithDPIDoing\bin\Release\ExportSlidesWithDPIDoing.dll
+C:\Users\gro_e\source\repos\ExportSlidesWithDPIDoing\bin\Release\ExportSlidesWithDPIDoing.pdb
+C:\Users\gro_e\source\repos\ExportSlidesWithDPIDoing\bin\Release\ExportSlidesWithDPIDoing.dll.manifest
+C:\Users\gro_e\source\repos\ExportSlidesWithDPIDoing\bin\Release\ExportSlidesWithDPIDoing.vsto
+C:\Users\gro_e\source\repos\ExportSlidesWithDPIDoing\bin\Release\Microsoft.Office.Tools.Common.v4.0.Utilities.dll
+C:\Users\gro_e\source\repos\ExportSlidesWithDPIDoing\obj\Release\ExportSlidesWithDPIDoing.csproj.AssemblyReference.cache
+C:\Users\gro_e\source\repos\ExportSlidesWithDPIDoing\obj\Release\ExportSlidesWithDPIDoing.Properties.Resources.resources
+C:\Users\gro_e\source\repos\ExportSlidesWithDPIDoing\obj\Release\ExportSlidesWithDPIDoing.Ribbon1.resources
+C:\Users\gro_e\source\repos\ExportSlidesWithDPIDoing\obj\Release\ExportSlidesWithDPIDoing.csproj.GenerateResource.cache
+C:\Users\gro_e\source\repos\ExportSlidesWithDPIDoing\obj\Release\ExportSlidesWithDPIDoing.csproj.CoreCompileInputs.cache
+C:\Users\gro_e\source\repos\ExportSlidesWithDPIDoing\obj\Release\ExportSl.D15134FA.Up2Date
+C:\Users\gro_e\source\repos\ExportSlidesWithDPIDoing\obj\Release\ExportSlidesWithDPIDoing.dll
+C:\Users\gro_e\source\repos\ExportSlidesWithDPIDoing\obj\Release\ExportSlidesWithDPIDoing.pdb
