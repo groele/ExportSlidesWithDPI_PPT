@@ -9,7 +9,10 @@ using System.Windows.Forms;
 using System.Threading.Tasks;
 using System.Threading;
 using PowerPoint = Microsoft.Office.Interop.PowerPoint;
-
+/// <summary>
+/// Export the specified slide as an image, and support setting the format and DPI
+/// </summary>
+/// V 0.3  2025.05.19
 namespace ExportSlidesWithDPIDoing
 {
     public partial class Ribbon1
@@ -439,7 +442,7 @@ namespace ExportSlidesWithDPIDoing
         private void button3_Click(object sender, RibbonControlEventArgs e)
         {
             string message = "Developers: Shikun, CSU\nEmail: shikun.creative@gmail.com";
-            MessageBox.Show(message, "关于开发者", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show(message, "About the Developer", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void button4_Click_1(object sender, RibbonControlEventArgs e)
@@ -466,7 +469,7 @@ namespace ExportSlidesWithDPIDoing
 
         private void InitializeComponents()
         {
-            this.Text = "导出进度";
+            this.Text = "Export progress";
             this.Size = new System.Drawing.Size(400, 150);
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -484,7 +487,7 @@ namespace ExportSlidesWithDPIDoing
             {
                 Location = new System.Drawing.Point(20, 60),
                 Size = new System.Drawing.Size(350, 20),
-                Text = "准备导出..."
+                Text = "Prepare to export..."
             };
 
             this.Controls.Add(progressBar);
@@ -496,7 +499,7 @@ namespace ExportSlidesWithDPIDoing
             currentProgress++;
             int percentage = (int)((float)currentProgress / TotalSlides * 100);
             progressBar.Value = percentage;
-            statusLabel.Text = $"正在导出... {currentProgress}/{TotalSlides} ({percentage}%)";
+            statusLabel.Text = $"Exporting... {currentProgress}/{TotalSlides} ({percentage}%)";
         }
     }
 }
