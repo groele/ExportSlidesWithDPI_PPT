@@ -1,5 +1,5 @@
 
-# SK-Creative
+# ExportSlidesWithDPI_PPT
 
 > 一款用于 PowerPoint 的自定义导出插件，支持以高 DPI 导出指定页码或当前页的图片。
 
@@ -44,8 +44,13 @@
    点击“开始导出”按钮，插件将根据设置导出相应的幻灯片图片。
 
 ## 开发背景
-
 该项目由 [Shikun](mailto:shikun.creative@gmail.com) 开发，旨在满足在学术演示中需要高质量幻灯片图片的需求。通过自定义开发，提供了更灵活和高效的导出功能。
+
+如果本插件对您有所助益，恳请在 GitHub 仓库点亮 ⭐ 并予以支持捐赠；您的鼓励将成为我持续迭代和完善插件的不竭动力。
+
+![328234138c4abfc6be098e31be4584d](https://github.com/user-attachments/assets/5a1d5e4f-dd7a-4a44-bb76-792df13aed41)
+
+
 
 ## 技术栈
 
