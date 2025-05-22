@@ -5,7 +5,7 @@
 
 ## 项目简介
 
-`SK-Creative` 是一款基于 Microsoft Office Interop 的 PowerPoint 插件，旨在提供高质量的幻灯片导出功能。用户可以选择特定页码、当前页或全部幻灯片进行导出，并支持设置导出图片的 DPI（每英寸点数）和格式（PNG、JPG、TIFF）。
+`ExportSlidesWithDPI_PPT` 是一款基于 Microsoft Office Interop 的 PowerPoint 插件，旨在提供高质量的幻灯片导出功能。用户可以选择特定页码、当前页或全部幻灯片进行导出，并支持设置导出图片的 DPI（每英寸点数）和格式（PNG、JPG、TIFF）。
 
 ## 核心功能
 
