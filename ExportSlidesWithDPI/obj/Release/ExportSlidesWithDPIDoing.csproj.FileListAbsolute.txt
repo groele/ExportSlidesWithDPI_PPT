@@ -11,3 +11,16 @@ C:\Users\gro_e\source\repos\ExportSlidesWithDPIDoing\obj\Release\ExportSlidesWit
 C:\Users\gro_e\source\repos\ExportSlidesWithDPIDoing\obj\Release\ExportSl.D15134FA.Up2Date
 C:\Users\gro_e\source\repos\ExportSlidesWithDPIDoing\obj\Release\ExportSlidesWithDPIDoing.dll
 C:\Users\gro_e\source\repos\ExportSlidesWithDPIDoing\obj\Release\ExportSlidesWithDPIDoing.pdb
+D:\VS Dev\ExportSlidesWithDPI(Chinese)\bin\Release\ExportSlidesWithDPI.dll
+D:\VS Dev\ExportSlidesWithDPI(Chinese)\bin\Release\ExportSlidesWithDPI.pdb
+D:\VS Dev\ExportSlidesWithDPI(Chinese)\bin\Release\ExportSlidesWithDPI.dll.manifest
+D:\VS Dev\ExportSlidesWithDPI(Chinese)\bin\Release\ExportSlidesWithDPI.vsto
+D:\VS Dev\ExportSlidesWithDPI(Chinese)\bin\Release\Microsoft.Office.Tools.Common.v4.0.Utilities.dll
+D:\VS Dev\ExportSlidesWithDPI(Chinese)\obj\Release\ExportSlidesWithDPIDoing.csproj.AssemblyReference.cache
+D:\VS Dev\ExportSlidesWithDPI(Chinese)\obj\Release\ExportSlidesWithDPIDoing.Properties.Resources.resources
+D:\VS Dev\ExportSlidesWithDPI(Chinese)\obj\Release\ExportSlidesWithDPIDoing.Ribbon1.resources
+D:\VS Dev\ExportSlidesWithDPI(Chinese)\obj\Release\ExportSlidesWithDPIDoing.csproj.GenerateResource.cache
+D:\VS Dev\ExportSlidesWithDPI(Chinese)\obj\Release\ExportSlidesWithDPIDoing.csproj.CoreCompileInputs.cache
+D:\VS Dev\ExportSlidesWithDPI(Chinese)\obj\Release\ExportSl.D15134FA.Up2Date
+D:\VS Dev\ExportSlidesWithDPI(Chinese)\obj\Release\ExportSlidesWithDPI.dll
+D:\VS Dev\ExportSlidesWithDPI(Chinese)\obj\Release\ExportSlidesWithDPI.pdb

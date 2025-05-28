@@ -24,3 +24,29 @@ C:\Users\gro_e\Desktop\ExportSlidesWithDPI_PPT-main\ExportSlidesWithDPI_PPT-main
 C:\Users\gro_e\Desktop\ExportSlidesWithDPI_PPT-main\ExportSlidesWithDPI_PPT-main\ExportSlidesWithDPI\obj\Debug\ExportSl.D15134FA.Up2Date
 C:\Users\gro_e\Desktop\ExportSlidesWithDPI_PPT-main\ExportSlidesWithDPI_PPT-main\ExportSlidesWithDPI\obj\Debug\ExportSlidesWithDPIDoing.dll
 C:\Users\gro_e\Desktop\ExportSlidesWithDPI_PPT-main\ExportSlidesWithDPI_PPT-main\ExportSlidesWithDPI\obj\Debug\ExportSlidesWithDPIDoing.pdb
+D:\VS Dev\ExportSlidesWithDPI\bin\Debug\ExportSlidesWithDPIDoing.dll
+D:\VS Dev\ExportSlidesWithDPI\bin\Debug\ExportSlidesWithDPIDoing.pdb
+D:\VS Dev\ExportSlidesWithDPI\bin\Debug\ExportSlidesWithDPIDoing.dll.manifest
+D:\VS Dev\ExportSlidesWithDPI\bin\Debug\ExportSlidesWithDPIDoing.vsto
+D:\VS Dev\ExportSlidesWithDPI\bin\Debug\Microsoft.Office.Tools.Common.v4.0.Utilities.dll
+D:\VS Dev\ExportSlidesWithDPI\obj\Debug\ExportSlidesWithDPIDoing.csproj.AssemblyReference.cache
+D:\VS Dev\ExportSlidesWithDPI\obj\Debug\ExportSlidesWithDPIDoing.Properties.Resources.resources
+D:\VS Dev\ExportSlidesWithDPI\obj\Debug\ExportSlidesWithDPIDoing.Ribbon1.resources
+D:\VS Dev\ExportSlidesWithDPI\obj\Debug\ExportSlidesWithDPIDoing.csproj.GenerateResource.cache
+D:\VS Dev\ExportSlidesWithDPI\obj\Debug\ExportSlidesWithDPIDoing.csproj.CoreCompileInputs.cache
+D:\VS Dev\ExportSlidesWithDPI\obj\Debug\ExportSl.D15134FA.Up2Date
+D:\VS Dev\ExportSlidesWithDPI\obj\Debug\ExportSlidesWithDPIDoing.dll
+D:\VS Dev\ExportSlidesWithDPI\obj\Debug\ExportSlidesWithDPIDoing.pdb
+D:\VS Dev\ExportSlidesWithDPI(Chinese)\bin\Debug\Microsoft.Office.Tools.Common.v4.0.Utilities.dll
+D:\VS Dev\ExportSlidesWithDPI(Chinese)\obj\Debug\ExportSlidesWithDPIDoing.csproj.AssemblyReference.cache
+D:\VS Dev\ExportSlidesWithDPI(Chinese)\obj\Debug\ExportSlidesWithDPIDoing.Properties.Resources.resources
+D:\VS Dev\ExportSlidesWithDPI(Chinese)\obj\Debug\ExportSlidesWithDPIDoing.Ribbon1.resources
+D:\VS Dev\ExportSlidesWithDPI(Chinese)\obj\Debug\ExportSlidesWithDPIDoing.csproj.GenerateResource.cache
+D:\VS Dev\ExportSlidesWithDPI(Chinese)\obj\Debug\ExportSlidesWithDPIDoing.csproj.CoreCompileInputs.cache
+D:\VS Dev\ExportSlidesWithDPI(Chinese)\obj\Debug\ExportSl.D15134FA.Up2Date
+D:\VS Dev\ExportSlidesWithDPI(Chinese)\bin\Debug\ExportSlidesWithDPI.dll
+D:\VS Dev\ExportSlidesWithDPI(Chinese)\bin\Debug\ExportSlidesWithDPI.pdb
+D:\VS Dev\ExportSlidesWithDPI(Chinese)\bin\Debug\ExportSlidesWithDPI.dll.manifest
+D:\VS Dev\ExportSlidesWithDPI(Chinese)\bin\Debug\ExportSlidesWithDPI.vsto
+D:\VS Dev\ExportSlidesWithDPI(Chinese)\obj\Debug\ExportSlidesWithDPI.dll
+D:\VS Dev\ExportSlidesWithDPI(Chinese)\obj\Debug\ExportSlidesWithDPI.pdb
