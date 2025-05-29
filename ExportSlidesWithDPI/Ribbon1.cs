@@ -33,9 +33,7 @@ namespace ExportSlidesWithDPIDoing
             { "png", "PNG" },
             { "jpg", "JPG" },
             { "bmp", "BMP" },
-            { "tif", "TIF" },
-            { "svg", "SVG" },
-            { "eps", "EPS" }
+            { "tif", "TIF" }
         };
 
         // 性能优化相关参数
@@ -393,25 +391,12 @@ namespace ExportSlidesWithDPIDoing
                 if (formatMap.ContainsKey(format))
                 {
                     exportFormat = format;
-                    if (format == "svg" || format == "eps")
-                    {
-                        comboBox1.Enabled = false;
-                        ShowMessageBox(
-                            text: "SVG 和 EPS 格式为矢量格式，DPI 设置将不会生效。",
-                            caption: "格式提示",
-                            buttons: MessageBoxButtons.OK,
-                            icon: MessageBoxIcon.Information
-                        );
-                    }
-                    else
-                    {
-                        comboBox1.Enabled = true;
-                    }
+                    comboBox1.Enabled = true;
                 }
                 else
                 {
                     ShowMessageBox(
-                        text: "仅支持 PNG/JPG/BMP/TIF/SVG/EPS 格式",
+                        text: "仅支持 PNG/JPG/BMP/TIF 格式",
                         caption: "格式错误",
                         buttons: MessageBoxButtons.OK,
                         icon: MessageBoxIcon.Warning
@@ -803,79 +788,53 @@ namespace ExportSlidesWithDPIDoing
                             }
                         }
 
-                        // 对于矢量格式，不需要设置 DPI
-                        if (exportFormat == "svg" || exportFormat == "eps")
+                        int baseWidth = (int)pres.PageSetup.SlideWidth;
+                        int baseHeight = (int)pres.PageSetup.SlideHeight;
+                        int outputWidth = (int)(baseWidth * currentDPI / 72.0);
+                        int outputHeight = (int)(baseHeight * currentDPI / 72.0);
+
+                        await Task.Run(() =>
                         {
-                            await Task.Run(() =>
+                            using (var tempFile = new TempFile(exportFormat))
                             {
-                                using (var tempFile = new TempFile(exportFormat))
+                                try
                                 {
-                                    try
+                                    slide.Export(tempFile.Path, formatMap[exportFormat], outputWidth, outputHeight);
+                                    
+                                    // 如果需要裁剪白边
+                                    if (enableCropWhiteSpace && (exportFormat == "png" || exportFormat == "jpg" || exportFormat == "bmp"))
                                     {
-                                        slide.Export(tempFile.Path, formatMap[exportFormat]);
+                                        using (var image = System.Drawing.Image.FromFile(tempFile.Path))
+                                        {
+                                            var croppedImage = CropWhiteSpace(image, whiteSpaceMargin);
+                                            if (croppedImage != null)
+                                            {
+                                                try
+                                                {
+                                                    croppedImage.Save(fullPath, GetImageFormat(exportFormat));
+                                                }
+                                                finally
+                                                {
+                                                    croppedImage.Dispose();
+                                                }
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
                                         if (File.Exists(fullPath))
                                         {
                                             File.Delete(fullPath);
                                         }
                                         File.Move(tempFile.Path, fullPath);
                                     }
-                                    catch (Exception ex)
-                                    {
-                                        throw new Exception($"导出矢量格式失败: {ex.Message}");
-                                    }
                                 }
-                            }).ConfigureAwait(false);
-                        }
-                        else
-                        {
-                            int baseWidth = (int)pres.PageSetup.SlideWidth;
-                            int baseHeight = (int)pres.PageSetup.SlideHeight;
-                            int outputWidth = (int)(baseWidth * currentDPI / 72.0);
-                            int outputHeight = (int)(baseHeight * currentDPI / 72.0);
-
-                            await Task.Run(() =>
-                            {
-                                using (var tempFile = new TempFile(exportFormat))
+                                catch (Exception ex)
                                 {
-                                    try
-                                    {
-                                        slide.Export(tempFile.Path, formatMap[exportFormat], outputWidth, outputHeight);
-                                        
-                                        // 如果需要裁剪白边
-                                        if (enableCropWhiteSpace && (exportFormat == "png" || exportFormat == "jpg" || exportFormat == "bmp"))
-                                        {
-                                            using (var image = System.Drawing.Image.FromFile(tempFile.Path))
-                                            {
-                                                var croppedImage = CropWhiteSpace(image, whiteSpaceMargin);
-                                                if (croppedImage != null)
-                                                {
-                                                    try
-                                                    {
-                                                        croppedImage.Save(fullPath, GetImageFormat(exportFormat));
-                                                    }
-                                                    finally
-                                                    {
-                                                        croppedImage.Dispose();
-                                                    }
-                                                }
-                                            }
-                                        }
-                                        else
-                                        {
-                                            if (File.Exists(fullPath))
-                                            {
-                                                File.Delete(fullPath);
-                                            }
-                                            File.Move(tempFile.Path, fullPath);
-                                        }
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        throw new Exception($"导出图片格式失败: {ex.Message}");
-                                    }
+                                    throw new Exception($"导出图片格式失败: {ex.Message}");
                                 }
-                            }).ConfigureAwait(false);
-                        }
+                            }
+                        }).ConfigureAwait(false);
 
                         // 验证文件是否成功创建
                         if (!File.Exists(fullPath))
@@ -1067,43 +1026,35 @@ namespace ExportSlidesWithDPIDoing
                 string fileName = $"{Path.GetFileNameWithoutExtension(pres.Name)}_Slide{slideNumber}_{DateTime.Now:yyyyMMddHHmmss}.{exportFormat}";
                 string fullPath = Path.Combine(saveFolderPath, fileName);
 
-                // 对于矢量格式，不需要设置 DPI
-                if (exportFormat == "svg" || exportFormat == "eps")
+                int baseWidth = (int)pres.PageSetup.SlideWidth;
+                int baseHeight = (int)pres.PageSetup.SlideHeight;
+                int outputWidth = (int)(baseWidth * currentDPI / 72.0);
+                int outputHeight = (int)(baseHeight * currentDPI / 72.0);
+
+                // 对于高DPI导出，使用临时文件进行优化
+                if (currentDPI >= 600)
                 {
-                    slide.Export(fullPath, formatMap[exportFormat]);
+                    string tempPath = Path.Combine(Path.GetTempPath(), $"temp_{Guid.NewGuid()}.{exportFormat}");
+                    try
+                    {
+                        slide.Export(tempPath, formatMap[exportFormat], outputWidth, outputHeight);
+                        if (File.Exists(fullPath))
+                        {
+                            File.Delete(fullPath);
+                        }
+                        File.Move(tempPath, fullPath);
+                    }
+                    finally
+                    {
+                        if (File.Exists(tempPath))
+                        {
+                            File.Delete(tempPath);
+                        }
+                    }
                 }
                 else
                 {
-                    int baseWidth = (int)pres.PageSetup.SlideWidth;
-                    int baseHeight = (int)pres.PageSetup.SlideHeight;
-                    int outputWidth = (int)(baseWidth * currentDPI / 72.0);
-                    int outputHeight = (int)(baseHeight * currentDPI / 72.0);
-
-                    // 对于高DPI导出，使用临时文件进行优化
-                    if (currentDPI >= 600)
-                    {
-                        string tempPath = Path.Combine(Path.GetTempPath(), $"temp_{Guid.NewGuid()}.{exportFormat}");
-                        try
-                        {
-                            slide.Export(tempPath, formatMap[exportFormat], outputWidth, outputHeight);
-                            if (File.Exists(fullPath))
-                            {
-                                File.Delete(fullPath);
-                            }
-                            File.Move(tempPath, fullPath);
-                        }
-                        finally
-                        {
-                            if (File.Exists(tempPath))
-                            {
-                                File.Delete(tempPath);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        slide.Export(fullPath, formatMap[exportFormat], outputWidth, outputHeight);
-                    }
+                    slide.Export(fullPath, formatMap[exportFormat], outputWidth, outputHeight);
                 }
                 return true;
             }
