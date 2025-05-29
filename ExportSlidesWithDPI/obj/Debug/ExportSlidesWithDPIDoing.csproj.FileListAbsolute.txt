@@ -50,3 +50,16 @@ D:\VS Dev\ExportSlidesWithDPI(Chinese)\bin\Debug\ExportSlidesWithDPI.dll.manifes
 D:\VS Dev\ExportSlidesWithDPI(Chinese)\bin\Debug\ExportSlidesWithDPI.vsto
 D:\VS Dev\ExportSlidesWithDPI(Chinese)\obj\Debug\ExportSlidesWithDPI.dll
 D:\VS Dev\ExportSlidesWithDPI(Chinese)\obj\Debug\ExportSlidesWithDPI.pdb
+D:\Git Project\SK Creative\ExportSlidesWithDPI\bin\Debug\ExportSlidesWithDPI.dll
+D:\Git Project\SK Creative\ExportSlidesWithDPI\bin\Debug\ExportSlidesWithDPI.pdb
+D:\Git Project\SK Creative\ExportSlidesWithDPI\bin\Debug\ExportSlidesWithDPI.dll.manifest
+D:\Git Project\SK Creative\ExportSlidesWithDPI\bin\Debug\ExportSlidesWithDPI.vsto
+D:\Git Project\SK Creative\ExportSlidesWithDPI\bin\Debug\Microsoft.Office.Tools.Common.v4.0.Utilities.dll
+D:\Git Project\SK Creative\ExportSlidesWithDPI\obj\Debug\ExportSlidesWithDPIDoing.csproj.AssemblyReference.cache
+D:\Git Project\SK Creative\ExportSlidesWithDPI\obj\Debug\ExportSlidesWithDPIDoing.Properties.Resources.resources
+D:\Git Project\SK Creative\ExportSlidesWithDPI\obj\Debug\ExportSlidesWithDPIDoing.Ribbon1.resources
+D:\Git Project\SK Creative\ExportSlidesWithDPI\obj\Debug\ExportSlidesWithDPIDoing.csproj.GenerateResource.cache
+D:\Git Project\SK Creative\ExportSlidesWithDPI\obj\Debug\ExportSlidesWithDPIDoing.csproj.CoreCompileInputs.cache
+D:\Git Project\SK Creative\ExportSlidesWithDPI\obj\Debug\ExportSl.D15134FA.Up2Date
+D:\Git Project\SK Creative\ExportSlidesWithDPI\obj\Debug\ExportSlidesWithDPI.dll
+D:\Git Project\SK Creative\ExportSlidesWithDPI\obj\Debug\ExportSlidesWithDPI.pdb

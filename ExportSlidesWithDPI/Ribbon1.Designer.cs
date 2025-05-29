@@ -196,13 +196,11 @@
             // 
             this.button4.Label = "使用说明";
             this.button4.Name = "button4";
-            this.button4.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.button4_Click_1);
             // 
             // button3
             // 
             this.button3.Label = "关于";
             this.button3.Name = "button3";
-            this.button3.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.button3_Click);
             // 
             // Ribbon1
             // 

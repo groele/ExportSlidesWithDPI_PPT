@@ -1127,8 +1127,8 @@ namespace ExportSlidesWithDPIDoing
                 DialogResult result = ShowMessageBox(
                     text: "PPT输出图片\n\n" +
                     "开发者：Shikun\n" +
-                    "版本：2.0.0\n" +
-                    "联系方式：your.email@example.com\n\n" +
+                    "版本：3.0.0\n" +
+                    "联系方式：shikun.creative@gmail.com\n\n" +
                     "是否访问开发者主页？",
                     caption: "开发者信息",
                     buttons: MessageBoxButtons.YesNo,
@@ -1160,8 +1160,7 @@ namespace ExportSlidesWithDPIDoing
                 "   - 灵活的 DPI 设置\n" +
                 "   - 灵活的导出范围选择\n" +
                 "   - 用户友好的界面\n" +
-                "   - 裁剪图片白边\n\n" +
-                "软件介绍",
+                "   - 裁剪图片白边\n\n",
                 caption: "关于",
                 buttons: MessageBoxButtons.OK,
                 icon: MessageBoxIcon.Information
