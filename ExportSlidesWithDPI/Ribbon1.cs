@@ -30,8 +30,8 @@ namespace ExportSlidesWithDPIDoing
         private int whiteSpaceMargin = 0; // 四周留白大小（像素）
         private readonly Dictionary<string, string> formatMap = new Dictionary<string, string>
         {
-            { "png", "PNG" },
             { "jpg", "JPG" },
+            { "png", "PNG" },
             { "bmp", "BMP" },
             { "tif", "TIF" }
         };
@@ -202,13 +202,15 @@ namespace ExportSlidesWithDPIDoing
 
         void BindEvents()
         {
-            this.Button1.Click += Button1_Click;       // 选择保存路径按钮
             this.button2.Click += Button2_Click;       // 导出按钮
             this.comboBox1.TextChanged += ComboBox1_TextChanged; // DPI修改
             this.comboBox2.TextChanged += ComboBox2_TextChanged; // 格式修改
             this.editBox1.TextChanged += EditBox_TextChanged;    // 页码输入
             this.button3.Click += button3_Click;       // 关于开发者
             this.button4.Click += button4_Click_1;     // 打开网址
+            // 移除重复的事件绑定，因为这些事件已经在Designer文件中绑定了
+            // this.button5.Click += button5_Click_1;     // 另存为按钮
+            // this.button6.Click += button6_Click_1;     // 图片另存为按钮
 
             // 绑定裁剪白边相关事件
             if (checkBox1 != null)
@@ -264,103 +266,6 @@ namespace ExportSlidesWithDPIDoing
                     buttons: buttons,
                     icon: icon,
                     defaultButton: MessageBoxDefaultButton.Button1
-                );
-            }
-        }
-
-        private void Button1_Click(object sender, RibbonControlEventArgs e)
-        {
-            try
-            {
-                using (var folderDialog = new FolderBrowserDialog())
-                {
-                    folderDialog.Description = "选择保存路径";
-                    folderDialog.ShowNewFolderButton = true;
-
-                    // 如果之前已经选择过路径，则从该路径开始浏览
-                    if (!string.IsNullOrEmpty(saveFolderPath) && Directory.Exists(saveFolderPath))
-                    {
-                        folderDialog.SelectedPath = saveFolderPath;
-                    }
-
-                    if (folderDialog.ShowDialog() == DialogResult.OK)
-                    {
-                        string selectedPath = folderDialog.SelectedPath;
-
-                        // 检查路径是否有效
-                        if (string.IsNullOrEmpty(selectedPath))
-                        {
-                            ShowMessageBox(
-                                text: "请选择有效的保存路径",
-                                caption: "路径无效",
-                                buttons: MessageBoxButtons.OK,
-                                icon: MessageBoxIcon.Warning
-                            );
-                            return;
-                        }
-
-                        // 检查路径是否可写
-                        try
-                        {
-                            string testFile = Path.Combine(selectedPath, "test_write.tmp");
-                            File.WriteAllText(testFile, "test");
-                            File.Delete(testFile);
-                        }
-                        catch (Exception ex)
-                        {
-                            ShowMessageBox(
-                                text: $"所选路径没有写入权限：{ex.Message}\n请选择其他路径",
-                                caption: "权限错误",
-                                buttons: MessageBoxButtons.OK,
-                                icon: MessageBoxIcon.Error
-                            );
-                            return;
-                        }
-
-                        // 检查磁盘空间
-                        try
-                        {
-                            var drive = new DriveInfo(Path.GetPathRoot(selectedPath));
-                            if (drive.AvailableFreeSpace < 1024 * 1024 * 100) // 100MB
-                            {
-                                ShowMessageBox(
-                                    text: "所选磁盘空间不足，请确保有至少100MB的可用空间",
-                                    caption: "空间不足",
-                                    buttons: MessageBoxButtons.OK,
-                                    icon: MessageBoxIcon.Warning
-                                );
-                                return;
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            ShowMessageBox(
-                                text: $"检查磁盘空间时出错：{ex.Message}\n请选择其他路径",
-                                caption: "磁盘错误",
-                                buttons: MessageBoxButtons.OK,
-                                icon: MessageBoxIcon.Error
-                            );
-                            return;
-                        }
-
-                        // 所有检查都通过，保存路径
-                        saveFolderPath = selectedPath;
-                        ShowMessageBox(
-                            text: $"保存路径已设置为：{saveFolderPath}",
-                            caption: "路径设置成功",
-                            buttons: MessageBoxButtons.OK,
-                            icon: MessageBoxIcon.Information
-                        );
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                ShowMessageBox(
-                    text: $"选择路径时发生错误：{ex.Message}\n请重试",
-                    caption: "错误",
-                    buttons: MessageBoxButtons.OK,
-                    icon: MessageBoxIcon.Error
                 );
             }
         }
@@ -1201,6 +1106,199 @@ namespace ExportSlidesWithDPIDoing
                     );
                     editBox2.Text = whiteSpaceMargin.ToString();
                 }
+            }
+        }
+
+        private void button5_Click_1(object sender, RibbonControlEventArgs e)
+        {
+            try
+            {
+                using (var saveDialog = new SaveFileDialog())
+                {
+                    saveDialog.Title = "选择保存位置";
+                    saveDialog.Filter = "所有文件|*.*";
+                    saveDialog.FileName = "导出图片";
+                    saveDialog.InitialDirectory = !string.IsNullOrEmpty(saveFolderPath) && Directory.Exists(saveFolderPath) 
+                        ? saveFolderPath 
+                        : Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+
+                    if (saveDialog.ShowDialog() == DialogResult.OK)
+                    {
+                        string selectedPath = Path.GetDirectoryName(saveDialog.FileName);
+                        
+                        // 检查路径是否有效
+                        if (string.IsNullOrEmpty(selectedPath))
+                        {
+                            ShowMessageBox(
+                                text: "请选择有效的保存路径",
+                                caption: "路径无效",
+                                buttons: MessageBoxButtons.OK,
+                                icon: MessageBoxIcon.Warning
+                            );
+                            return;
+                        }
+
+                        // 检查路径是否可写
+                        try
+                        {
+                            string testFile = Path.Combine(selectedPath, "test_write.tmp");
+                            File.WriteAllText(testFile, "test");
+                            File.Delete(testFile);
+                        }
+                        catch (Exception ex)
+                        {
+                            ShowMessageBox(
+                                text: $"所选路径没有写入权限：{ex.Message}\n请选择其他路径",
+                                caption: "权限错误",
+                                buttons: MessageBoxButtons.OK,
+                                icon: MessageBoxIcon.Error
+                            );
+                            return;
+                        }
+
+                        // 检查磁盘空间
+                        try
+                        {
+                            var drive = new DriveInfo(Path.GetPathRoot(selectedPath));
+                            if (drive.AvailableFreeSpace < 1024 * 1024 * 100) // 100MB
+                            {
+                                ShowMessageBox(
+                                    text: "所选磁盘空间不足，请确保有至少100MB的可用空间",
+                                    caption: "空间不足",
+                                    buttons: MessageBoxButtons.OK,
+                                    icon: MessageBoxIcon.Warning
+                                );
+                                return;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            ShowMessageBox(
+                                text: $"检查磁盘空间时出错：{ex.Message}\n请选择其他路径",
+                                caption: "磁盘错误",
+                                buttons: MessageBoxButtons.OK,
+                                icon: MessageBoxIcon.Error
+                            );
+                            return;
+                        }
+
+                        // 所有检查都通过，直接保存路径
+                        saveFolderPath = selectedPath;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                ShowMessageBox(
+                    text: $"选择路径时发生错误：{ex.Message}\n请重试",
+                    caption: "错误",
+                    buttons: MessageBoxButtons.OK,
+                    icon: MessageBoxIcon.Error
+                );
+            }
+        }
+
+        private void button6_Click_1(object sender, RibbonControlEventArgs e)
+        {
+            if (isExporting)
+            {
+                ShowMessageBox(
+                    text: "正在导出中，请等待当前任务完成",
+                    caption: "导出中",
+                    buttons: MessageBoxButtons.OK,
+                    icon: MessageBoxIcon.Warning
+                );
+                return;
+            }
+
+            try
+            {
+                using (var saveDialog = new SaveFileDialog())
+                {
+                    saveDialog.Title = "选择图片保存位置";
+                    saveDialog.Filter = "JPEG图片|*.jpg|PNG图片|*.png|BMP图片|*.bmp|TIFF图片|*.tif|所有文件|*.*";
+                    saveDialog.FilterIndex = 1;  // 设置为JPG格式
+                    saveDialog.FileName = "导出图片.jpg";  // 默认文件名添加.jpg后缀
+                    saveDialog.InitialDirectory = !string.IsNullOrEmpty(saveFolderPath) && Directory.Exists(saveFolderPath) 
+                        ? saveFolderPath 
+                        : Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
+
+                    if (saveDialog.ShowDialog() == DialogResult.OK)
+                    {
+                        string selectedPath = Path.GetDirectoryName(saveDialog.FileName);
+                        
+                        // 检查路径是否有效
+                        if (string.IsNullOrEmpty(selectedPath))
+                        {
+                            ShowMessageBox(
+                                text: "请选择有效的保存路径",
+                                caption: "路径无效",
+                                buttons: MessageBoxButtons.OK,
+                                icon: MessageBoxIcon.Warning
+                            );
+                            return;
+                        }
+
+                        // 检查路径是否可写
+                        try
+                        {
+                            string testFile = Path.Combine(selectedPath, "test_write.tmp");
+                            File.WriteAllText(testFile, "test");
+                            File.Delete(testFile);
+                        }
+                        catch (Exception ex)
+                        {
+                            ShowMessageBox(
+                                text: $"所选路径没有写入权限：{ex.Message}\n请选择其他路径",
+                                caption: "权限错误",
+                                buttons: MessageBoxButtons.OK,
+                                icon: MessageBoxIcon.Error
+                            );
+                            return;
+                        }
+
+                        // 检查磁盘空间
+                        try
+                        {
+                            var drive = new DriveInfo(Path.GetPathRoot(selectedPath));
+                            if (drive.AvailableFreeSpace < 1024 * 1024 * 100) // 100MB
+                            {
+                                ShowMessageBox(
+                                    text: "所选磁盘空间不足，请确保有至少100MB的可用空间",
+                                    caption: "空间不足",
+                                    buttons: MessageBoxButtons.OK,
+                                    icon: MessageBoxIcon.Warning
+                                );
+                                return;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            ShowMessageBox(
+                                text: $"检查磁盘空间时出错：{ex.Message}\n请选择其他路径",
+                                caption: "磁盘错误",
+                                buttons: MessageBoxButtons.OK,
+                                icon: MessageBoxIcon.Error
+                            );
+                            return;
+                        }
+
+                        // 所有检查都通过，保存路径并执行导出
+                        saveFolderPath = selectedPath;
+                        
+                        // 调用导出功能
+                        Button2_Click(sender, e);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                ShowMessageBox(
+                    text: $"选择路径时发生错误：{ex.Message}\n请重试",
+                    caption: "错误",
+                    buttons: MessageBoxButtons.OK,
+                    icon: MessageBoxIcon.Error
+                );
             }
         }
     }

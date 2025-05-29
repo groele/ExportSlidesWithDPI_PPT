@@ -37,7 +37,8 @@
             this.PicExport = this.Factory.CreateRibbonTab();
             this.group1 = this.Factory.CreateRibbonGroup();
             this.label1 = this.Factory.CreateRibbonLabel();
-            this.Button1 = this.Factory.CreateRibbonButton();
+            this.button5 = this.Factory.CreateRibbonButton();
+            this.button6 = this.Factory.CreateRibbonButton();
             this.button2 = this.Factory.CreateRibbonButton();
             this.group2 = this.Factory.CreateRibbonGroup();
             this.label2 = this.Factory.CreateRibbonLabel();
@@ -56,6 +57,7 @@
             this.label5 = this.Factory.CreateRibbonLabel();
             this.button4 = this.Factory.CreateRibbonButton();
             this.button3 = this.Factory.CreateRibbonButton();
+            this.separator1 = this.Factory.CreateRibbonSeparator();
             this.PicExport.SuspendLayout();
             this.group1.SuspendLayout();
             this.group2.SuspendLayout();
@@ -79,8 +81,10 @@
             // group1
             // 
             this.group1.Items.Add(this.label1);
-            this.group1.Items.Add(this.Button1);
+            this.group1.Items.Add(this.button5);
             this.group1.Items.Add(this.button2);
+            this.group1.Items.Add(this.separator1);
+            this.group1.Items.Add(this.button6);
             this.group1.Name = "group1";
             // 
             // label1
@@ -88,12 +92,19 @@
             this.label1.Label = "文件";
             this.label1.Name = "label1";
             // 
-            // Button1
+            // button5
             // 
-            this.Button1.Description = "请选择图片输出位置";
-            this.Button1.Label = "文件夹";
-            this.Button1.Name = "Button1";
-            this.Button1.ScreenTip = "请选择图片存储位置";
+            this.button5.Label = "文件夹";
+            this.button5.Name = "button5";
+            this.button5.SuperTip = "选择保存路径";
+            this.button5.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.button5_Click_1);
+            // 
+            // button6
+            // 
+            this.button6.Label = "图片另存为";
+            this.button6.Name = "button6";
+            this.button6.SuperTip = "选择图片保存位置";
+            this.button6.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.button6_Click_1);
             // 
             // button2
             // 
@@ -202,6 +213,10 @@
             this.button3.Label = "关于";
             this.button3.Name = "button3";
             // 
+            // separator1
+            // 
+            this.separator1.Name = "separator1";
+            // 
             // Ribbon1
             // 
             this.Name = "Ribbon1";
@@ -240,8 +255,9 @@
         internal Microsoft.Office.Tools.Ribbon.RibbonComboBox comboBox1;
         internal Microsoft.Office.Tools.Ribbon.RibbonComboBox comboBox2;
         internal Microsoft.Office.Tools.Ribbon.RibbonEditBox editBox1;
-        internal Microsoft.Office.Tools.Ribbon.RibbonButton Button1;
         internal Microsoft.Office.Tools.Ribbon.RibbonButton button2;
+        internal Microsoft.Office.Tools.Ribbon.RibbonButton button5;
+        internal Microsoft.Office.Tools.Ribbon.RibbonButton button6;
         internal Microsoft.Office.Tools.Ribbon.RibbonGroup group5;
         internal Microsoft.Office.Tools.Ribbon.RibbonLabel label5;
         internal Microsoft.Office.Tools.Ribbon.RibbonButton button3;
@@ -250,6 +266,7 @@
         internal Microsoft.Office.Tools.Ribbon.RibbonLabel label6;
         internal Microsoft.Office.Tools.Ribbon.RibbonCheckBox checkBox1;
         internal Microsoft.Office.Tools.Ribbon.RibbonEditBox editBox2;
+        internal Microsoft.Office.Tools.Ribbon.RibbonSeparator separator1;
     }
 
     partial class ThisRibbonCollection
