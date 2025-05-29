@@ -763,7 +763,8 @@ namespace ExportSlidesWithDPIDoing
                             throw new InvalidOperationException("无法访问指定的幻灯片");
                         }
 
-                        string fileName = $"{Path.GetFileNameWithoutExtension(pres.Name)}_Slide{slideNumber}_{DateTime.Now:yyyyMMddHHmmss}.{exportFormat}";
+                        string extension = exportFormat.ToLower() == "tif" ? "tif" : exportFormat;
+                        string fileName = $"{Path.GetFileNameWithoutExtension(pres.Name)}_Slide{slideNumber}_{DateTime.Now:yyyyMMddHHmmss}.{extension}";
                         string fullPath = Path.Combine(saveFolderPath, fileName);
 
                         // 检查目标文件夹是否存在且可写
@@ -795,14 +796,14 @@ namespace ExportSlidesWithDPIDoing
 
                         await Task.Run(() =>
                         {
-                            using (var tempFile = new TempFile(exportFormat))
+                            using (var tempFile = new TempFile(extension))
                             {
                                 try
                                 {
-                                    slide.Export(tempFile.Path, formatMap[exportFormat], outputWidth, outputHeight);
+                                    slide.Export(tempFile.Path, formatMap[extension], outputWidth, outputHeight);
                                     
                                     // 如果需要裁剪白边
-                                    if (enableCropWhiteSpace && (exportFormat == "png" || exportFormat == "jpg" || exportFormat == "bmp"))
+                                    if (enableCropWhiteSpace && (extension == "png" || extension == "jpg" || extension == "bmp" || extension == "tif"))
                                     {
                                         using (var image = System.Drawing.Image.FromFile(tempFile.Path))
                                         {
@@ -811,7 +812,16 @@ namespace ExportSlidesWithDPIDoing
                                             {
                                                 try
                                                 {
-                                                    croppedImage.Save(fullPath, GetImageFormat(exportFormat));
+                                                    var encoder = GetEncoder(extension);
+                                                    var encoderParams = GetEncoderParameters(extension);
+                                                    if (encoder != null)
+                                                    {
+                                                        croppedImage.Save(fullPath, encoder, encoderParams);
+                                                    }
+                                                    else
+                                                    {
+                                                        croppedImage.Save(fullPath, GetImageFormat(extension));
+                                                    }
                                                 }
                                                 finally
                                                 {
@@ -944,6 +954,9 @@ namespace ExportSlidesWithDPIDoing
                             System.Drawing.GraphicsUnit.Pixel);
                     }
 
+                    // 设置DPI
+                    croppedBitmap.SetResolution(image.HorizontalResolution, image.VerticalResolution);
+
                     return croppedBitmap;
                 }
             }
@@ -985,6 +998,45 @@ namespace ExportSlidesWithDPIDoing
             }
         }
 
+        private System.Drawing.Imaging.EncoderParameters GetEncoderParameters(string format)
+        {
+            if (format.ToLower() == "tif")
+            {
+                var encoderParams = new System.Drawing.Imaging.EncoderParameters(1);
+                encoderParams.Param[0] = new System.Drawing.Imaging.EncoderParameter(
+                    System.Drawing.Imaging.Encoder.Compression,
+                    (long)System.Drawing.Imaging.EncoderValue.CompressionNone
+                );
+                return encoderParams;
+            }
+            return null;
+        }
+
+        private System.Drawing.Imaging.ImageCodecInfo GetEncoder(string format)
+        {
+            var codecs = System.Drawing.Imaging.ImageCodecInfo.GetImageEncoders();
+            string mimeType;
+            switch (format.ToLower())
+            {
+                case "jpg":
+                    mimeType = "image/jpeg";
+                    break;
+                case "png":
+                    mimeType = "image/png";
+                    break;
+                case "bmp":
+                    mimeType = "image/bmp";
+                    break;
+                case "tif":
+                    mimeType = "image/tiff";
+                    break;
+                default:
+                    mimeType = "image/png";
+                    break;
+            }
+            return codecs.FirstOrDefault(codec => codec.MimeType == mimeType);
+        }
+
         private class TempFile : IDisposable
         {
             public string Path { get; }
@@ -1023,7 +1075,8 @@ namespace ExportSlidesWithDPIDoing
                     return false;
 
                 var slide = pres.Slides[slideNumber];
-                string fileName = $"{Path.GetFileNameWithoutExtension(pres.Name)}_Slide{slideNumber}_{DateTime.Now:yyyyMMddHHmmss}.{exportFormat}";
+                string extension = exportFormat.ToLower() == "tif" ? "tif" : exportFormat;
+                string fileName = $"{Path.GetFileNameWithoutExtension(pres.Name)}_Slide{slideNumber}_{DateTime.Now:yyyyMMddHHmmss}.{extension}";
                 string fullPath = Path.Combine(saveFolderPath, fileName);
 
                 int baseWidth = (int)pres.PageSetup.SlideWidth;
@@ -1034,10 +1087,10 @@ namespace ExportSlidesWithDPIDoing
                 // 对于高DPI导出，使用临时文件进行优化
                 if (currentDPI >= 600)
                 {
-                    string tempPath = Path.Combine(Path.GetTempPath(), $"temp_{Guid.NewGuid()}.{exportFormat}");
+                    string tempPath = Path.Combine(Path.GetTempPath(), $"temp_{Guid.NewGuid()}.{extension}");
                     try
                     {
-                        slide.Export(tempPath, formatMap[exportFormat], outputWidth, outputHeight);
+                        slide.Export(tempPath, formatMap[extension], outputWidth, outputHeight);
                         if (File.Exists(fullPath))
                         {
                             File.Delete(fullPath);
@@ -1054,7 +1107,7 @@ namespace ExportSlidesWithDPIDoing
                 }
                 else
                 {
-                    slide.Export(fullPath, formatMap[exportFormat], outputWidth, outputHeight);
+                    slide.Export(fullPath, formatMap[extension], outputWidth, outputHeight);
                 }
                 return true;
             }
