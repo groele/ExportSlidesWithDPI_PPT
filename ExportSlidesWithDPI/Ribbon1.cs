@@ -13,7 +13,7 @@ using PowerPoint = Microsoft.Office.Interop.PowerPoint;
 /// <summary>
 /// Export the specified slide as an image, and support setting the format and DPI
 /// </summary>
-/// V 2.0  2025.05.28
+/// V 4.0  2025.05.30
 /// 中文版本
 namespace ExportSlidesWithDPIDoing
 {
@@ -28,6 +28,7 @@ namespace ExportSlidesWithDPIDoing
         private ProgressForm progressForm;
         private bool enableCropWhiteSpace = false;
         private int whiteSpaceMargin = 0; // 四周留白大小（像素）
+        private string selectedImageFileName = string.Empty; // 添加变量存储用户选择的文件名
         private readonly Dictionary<string, string> formatMap = new Dictionary<string, string>
         {
             { "jpg", "JPG" },
@@ -579,23 +580,26 @@ namespace ExportSlidesWithDPIDoing
                     });
                 }
 
-                // 显示导出结果
-                string resultMessage = $"成功导出 {exportedCount}/{selectedPages.Count} 张幻灯片";
-                if (failedSlides.Count > 0)
+                // 只在有错误时显示消息框
+                if (failedSlides.Count > 0 || errorMessages.Count > 0)
                 {
-                    resultMessage += $"\n\n导出失败的幻灯片：{string.Join(", ", failedSlides)}";
-                }
-                if (errorMessages.Count > 0)
-                {
-                    resultMessage += $"\n\n错误信息：\n{string.Join("\n", errorMessages)}";
-                }
+                    string resultMessage = $"成功导出 {exportedCount}/{selectedPages.Count} 张幻灯片";
+                    if (failedSlides.Count > 0)
+                    {
+                        resultMessage += $"\n\n导出失败的幻灯片：{string.Join(", ", failedSlides)}";
+                    }
+                    if (errorMessages.Count > 0)
+                    {
+                        resultMessage += $"\n\n错误信息：\n{string.Join("\n", errorMessages)}";
+                    }
 
-                ShowMessageBox(
-                    text: resultMessage,
-                    caption: "导出完成",
-                    buttons: MessageBoxButtons.OK,
-                    icon: exportedCount == selectedPages.Count ? MessageBoxIcon.Information : MessageBoxIcon.Warning
-                );
+                    ShowMessageBox(
+                        text: resultMessage,
+                        caption: "导出完成",
+                        buttons: MessageBoxButtons.OK,
+                        icon: MessageBoxIcon.Warning
+                    );
+                }
             }
             catch (Exception ex)
             {
@@ -669,7 +673,18 @@ namespace ExportSlidesWithDPIDoing
                         }
 
                         string extension = exportFormat.ToLower() == "tif" ? "tif" : exportFormat;
-                        string fileName = $"{Path.GetFileNameWithoutExtension(pres.Name)}_Slide{slideNumber}_{DateTime.Now:yyyyMMddHHmmss}.{extension}";
+                        string fileName;
+                        // 如果是图片另存为模式，使用用户选择的文件名
+                        if (!string.IsNullOrEmpty(selectedImageFileName))
+                        {
+                            fileName = selectedImageFileName;
+                            // 清除文件名，以便下次使用默认命名
+                            selectedImageFileName = string.Empty;
+                        }
+                        else
+                        {
+                            fileName = $"{Path.GetFileNameWithoutExtension(pres.Name)}_Slide{slideNumber}_{DateTime.Now:yyyyMMddHHmmss}.{extension}";
+                        }
                         string fullPath = Path.Combine(saveFolderPath, fileName);
 
                         // 检查目标文件夹是否存在且可写
@@ -678,19 +693,16 @@ namespace ExportSlidesWithDPIDoing
                             Directory.CreateDirectory(saveFolderPath);
                         }
 
-                        // 检查文件是否被占用
+                        // 如果文件已存在，先删除它
                         if (File.Exists(fullPath))
                         {
                             try
                             {
-                                using (FileStream fs = File.Open(fullPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
-                                {
-                                    // 文件未被占用，可以继续
-                                }
+                                File.Delete(fullPath);
                             }
                             catch (IOException)
                             {
-                                throw new IOException($"文件 {fullPath} 正在被其他程序使用");
+                                throw new IOException($"文件 {fullPath} 正在被其他程序使用，无法替换");
                             }
                         }
 
@@ -737,11 +749,12 @@ namespace ExportSlidesWithDPIDoing
                                     }
                                     else
                                     {
+                                        // 直接覆盖已存在的文件
                                         if (File.Exists(fullPath))
                                         {
                                             File.Delete(fullPath);
                                         }
-                                        File.Move(tempFile.Path, fullPath);
+                                        File.Copy(tempFile.Path, fullPath, true);
                                     }
                                 }
                                 catch (Exception ex)
@@ -1218,7 +1231,7 @@ namespace ExportSlidesWithDPIDoing
                     saveDialog.Title = "选择图片保存位置";
                     saveDialog.Filter = "JPEG图片|*.jpg|PNG图片|*.png|BMP图片|*.bmp|TIFF图片|*.tif|所有文件|*.*";
                     saveDialog.FilterIndex = 1;  // 设置为JPG格式
-                    saveDialog.FileName = "导出图片.jpg";  // 默认文件名添加.jpg后缀
+                    saveDialog.FileName = "Fig.jpg";  // 默认文件名添加.jpg后缀
                     saveDialog.InitialDirectory = !string.IsNullOrEmpty(saveFolderPath) && Directory.Exists(saveFolderPath) 
                         ? saveFolderPath 
                         : Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
@@ -1226,6 +1239,7 @@ namespace ExportSlidesWithDPIDoing
                     if (saveDialog.ShowDialog() == DialogResult.OK)
                     {
                         string selectedPath = Path.GetDirectoryName(saveDialog.FileName);
+                        string selectedFileName = Path.GetFileName(saveDialog.FileName);
                         
                         // 检查路径是否有效
                         if (string.IsNullOrEmpty(selectedPath))
@@ -1239,18 +1253,66 @@ namespace ExportSlidesWithDPIDoing
                             return;
                         }
 
-                        // 检查路径是否可写
+                        // 检查文件是否可写
                         try
                         {
-                            string testFile = Path.Combine(selectedPath, "test_write.tmp");
-                            File.WriteAllText(testFile, "test");
-                            File.Delete(testFile);
+                            string fullPath = Path.Combine(selectedPath, selectedFileName);
+                            if (File.Exists(fullPath))
+                            {
+                                // 尝试打开文件以检查是否可写
+                                using (FileStream fs = File.Open(fullPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+                                {
+                                    // 文件未被占用，可以继续
+                                }
+                                // 确保文件没有被设置为只读
+                                FileAttributes attributes = File.GetAttributes(fullPath);
+                                if ((attributes & FileAttributes.ReadOnly) == FileAttributes.ReadOnly)
+                                {
+                                    ShowMessageBox(
+                                        text: "所选文件是只读的，无法替换",
+                                        caption: "文件只读",
+                                        buttons: MessageBoxButtons.OK,
+                                        icon: MessageBoxIcon.Error
+                                    );
+                                    return;
+                                }
+                            }
+                            else
+                            {
+                                // 如果文件不存在，检查目录权限
+                                try
+                                {
+                                    string testFile = Path.Combine(selectedPath, "test_write.tmp");
+                                    File.WriteAllText(testFile, "test");
+                                    File.Delete(testFile);
+                                }
+                                catch (UnauthorizedAccessException)
+                                {
+                                    ShowMessageBox(
+                                        text: "没有权限在所选目录创建文件",
+                                        caption: "权限不足",
+                                        buttons: MessageBoxButtons.OK,
+                                        icon: MessageBoxIcon.Error
+                                    );
+                                    return;
+                                }
+                            }
+                        }
+                        catch (IOException)
+                        {
+                            ShowMessageBox(
+                                text: $"所选文件正在被其他程序使用，无法替换",
+                                caption: "文件被占用",
+                                buttons: MessageBoxButtons.OK,
+                                icon: MessageBoxIcon.Error
+                            );
+                            return;
                         }
                         catch (Exception ex)
                         {
                             ShowMessageBox(
-                                text: $"所选路径没有写入权限：{ex.Message}\n请选择其他路径",
-                                caption: "权限错误",
+                                text: $"检查文件时发生错误：{ex.Message}\n请选择其他文件或路径",
+                                caption: "错误",
                                 buttons: MessageBoxButtons.OK,
                                 icon: MessageBoxIcon.Error
                             );
@@ -1283,11 +1345,43 @@ namespace ExportSlidesWithDPIDoing
                             return;
                         }
 
-                        // 所有检查都通过，保存路径并执行导出
-                        saveFolderPath = selectedPath;
-                        
-                        // 调用导出功能
-                        Button2_Click(sender, e);
+                        // 所有检查都通过，保存完整路径和文件名
+                        try
+                        {
+                            saveFolderPath = selectedPath;
+                            selectedImageFileName = selectedFileName;
+                            
+                            // 设置导出格式为选择的文件格式
+                            string extension = Path.GetExtension(selectedFileName).TrimStart('.').ToLower();
+                            if (formatMap.ContainsKey(extension))
+                            {
+                                exportFormat = extension;
+                                comboBox2.Text = extension.ToUpper();
+                            }
+                            else
+                            {
+                                ShowMessageBox(
+                                    text: "不支持的文件格式，请选择JPG、PNG、BMP或TIF格式",
+                                    caption: "格式错误",
+                                    buttons: MessageBoxButtons.OK,
+                                    icon: MessageBoxIcon.Warning
+                                );
+                                return;
+                            }
+                            
+                            // 调用导出功能
+                            Button2_Click(sender, e);
+                        }
+                        catch (Exception ex)
+                        {
+                            ShowMessageBox(
+                                text: $"设置导出参数时发生错误：{ex.Message}\n请重试",
+                                caption: "错误",
+                                buttons: MessageBoxButtons.OK,
+                                icon: MessageBoxIcon.Error
+                            );
+                            return;
+                        }
                     }
                 }
             }
