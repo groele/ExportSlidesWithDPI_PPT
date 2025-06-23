@@ -923,7 +923,7 @@ namespace ExportSlidesWithDPIDoing
                 var encoderParams = new System.Drawing.Imaging.EncoderParameters(1);
                 encoderParams.Param[0] = new System.Drawing.Imaging.EncoderParameter(
                     System.Drawing.Imaging.Encoder.Compression,
-                    (long)System.Drawing.Imaging.EncoderValue.CompressionNone
+                    (long)System.Drawing.Imaging.EncoderValue.CompressionLZW
                 );
                 return encoderParams;
             }
@@ -1230,8 +1230,19 @@ namespace ExportSlidesWithDPIDoing
                 {
                     saveDialog.Title = "选择图片保存位置";
                     saveDialog.Filter = "JPEG图片|*.jpg|PNG图片|*.png|BMP图片|*.bmp|TIFF图片|*.tif|所有文件|*.*";
-                    saveDialog.FilterIndex = 1;  // 设置为JPG格式
-                    saveDialog.FileName = "Fig.jpg";  // 默认文件名添加.jpg后缀
+                    // 根据当前图片格式设置默认文件名和扩展名
+                    string ext = exportFormat.ToLower();
+                    string defaultName = "Fig." + ext;
+                    saveDialog.FileName = defaultName;
+                    // 设置FilterIndex与格式对应
+                    switch (ext)
+                    {
+                        case "jpg": saveDialog.FilterIndex = 1; break;
+                        case "png": saveDialog.FilterIndex = 2; break;
+                        case "bmp": saveDialog.FilterIndex = 3; break;
+                        case "tif": saveDialog.FilterIndex = 4; break;
+                        default: saveDialog.FilterIndex = 1; break;
+                    }
                     saveDialog.InitialDirectory = !string.IsNullOrEmpty(saveFolderPath) && Directory.Exists(saveFolderPath) 
                         ? saveFolderPath 
                         : Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
