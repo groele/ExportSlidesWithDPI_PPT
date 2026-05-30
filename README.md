@@ -1,63 +1,161 @@
+<div align="center">
 
 # ExportSlidesWithDPI_PPT
 
-> 一款用于 PowerPoint 的自定义导出插件，支持以高 DPI 导出指定页码或当前页的图片。
+**面向论文图件与学术展示的 PowerPoint 高 DPI 幻灯片导出插件**  
+*PowerPoint export utility for high-DPI slide images, selected-page export, and publication/presentation-ready visual assets.*
 
-## 项目简介
+![Type](https://img.shields.io/badge/type-PowerPoint%20Add--in-blue?style=flat-square)
+![Domain](https://img.shields.io/badge/domain-slide%20export%20%2F%20figures-green?style=flat-square)
+![Language](https://img.shields.io/badge/language-C%23-blueviolet?style=flat-square)
+![Architecture](https://img.shields.io/badge/architecture-Office%20Interop-purple?style=flat-square)
+![License](https://img.shields.io/badge/license-MIT-yellow?style=flat-square)
 
-`ExportSlidesWithDPI_PPT` 是一款基于 Microsoft Office Interop 的 PowerPoint 插件，旨在提供高质量的幻灯片导出功能。用户可以选择特定页码、当前页或全部幻灯片进行导出，并支持设置导出图片的 DPI（每英寸点数）和格式（PNG、JPG、TIFF）。
+Part of **ResearchFlow Lab** — a local-first research productivity ecosystem for literature, manuscripts, data, and scientific visualization.
 
-## 核心功能
+</div>
 
-- **页码范围支持**：  
-  - `0`：导出当前选中的幻灯片  
-  - `1,3-5`：导出第 1 页和第 3 至第 5 页  
-  - `all`：导出所有幻灯片  
-  - 支持自定义页码范围，如 `2,4,6-8`
+---
 
-- **高 DPI 导出**：  
-  - 支持设置导出图片的 DPI，默认值为 300，可根据需要调整
+## 01. Overview
 
-- **多种图片格式支持**：  
-  - 支持导出为 PNG、JPG 和 TIFF 格式
+**ExportSlidesWithDPI_PPT** is a PowerPoint utility for exporting selected slides, custom page ranges, or complete presentations as high-DPI images. It is designed for academic figures, conference slides, graphical abstracts, mechanism diagrams, and manuscript-supporting visual material.
 
-- **用户友好的界面**：  
-  - 提供清晰的提示信息，帮助用户正确输入页码范围
+**ExportSlidesWithDPI_PPT** 是一个 PowerPoint 高 DPI 图片导出插件，支持当前页、指定页码范围和全部幻灯片导出，适合论文图件、学术展示、机制示意图和投稿图像材料准备。
 
-## 使用方法
+---
 
-1. **安装插件**：  
-   将插件添加到 PowerPoint 的加载项中。
+## 02. Why this project exists
 
-2. **设置导出选项**：  
-   - 在插件界面中，选择导出图片的格式（PNG、JPG 或 TIFF）。
-   - 设置所需的 DPI 值。
-   - 在页码输入框中，输入要导出的幻灯片页码范围。例如：
-     - `0`：导出当前选中的幻灯片
-     - `1,3-5`：导出第 1 页和第 3 至第 5 页
-     - `all`：导出所有幻灯片
+PowerPoint is widely used to assemble scientific diagrams and presentation figures, but its default export workflow is often insufficient for high-resolution academic use. Researchers frequently need exact page-range export, consistent DPI, and reproducible image formats for manuscripts, presentations, covers, posters, and supplementary figures.
 
-3. **选择保存路径**：  
-   点击“选择保存路径”按钮，选择导出图片的保存位置。
+核心目标：
 
-4. **开始导出**：  
-   点击“开始导出”按钮，插件将根据设置导出相应的幻灯片图片。
+- Export PowerPoint slides with user-defined DPI.
+- Support current slide, custom page ranges, and full-presentation export.
+- Support common image formats such as PNG, JPG, and TIFF.
+- Provide a more controlled workflow for manuscript and presentation assets.
+- Complement Scientific Color Lab and other research-visualization tools.
 
-## 开发背景
-该项目由 [Shikun](mailto:shikun.creative@gmail.com) 开发，旨在满足在学术演示中需要高质量幻灯片图片的需求。通过自定义开发，提供了更灵活和高效的导出功能。
+---
 
-如果本插件对您有所助益，恳请在 GitHub 仓库点亮 ⭐ 并予以支持捐赠；您的鼓励将成为我持续迭代和完善插件的不竭动力。
+## 03. Key features
 
-![328234138c4abfc6be098e31be4584d](https://github.com/user-attachments/assets/5a1d5e4f-dd7a-4a44-bb76-792df13aed41)
+| Module | What it does | 中文说明 |
+|---|---|---|
+| Page Range Export | Exports current slide, selected pages, ranges, or all slides | 支持当前页、指定页码、页码区间和全部页面导出 |
+| High-DPI Control | Allows custom DPI settings, with 300 DPI as a common academic default | 支持自定义 DPI，常用 300 DPI 用于学术图件 |
+| Multi-format Export | Supports PNG, JPG, and TIFF image formats | 支持 PNG、JPG、TIFF 图片格式 |
+| Save Path Selection | Lets users choose the output directory | 支持选择导出保存路径 |
+| Academic Figure Workflow | Supports manuscript figures, presentations, posters, and graphical assets | 服务论文图件、学术汇报、海报和图形摘要 |
+| PowerPoint Integration | Uses Microsoft Office Interop / add-in workflow | 基于 Microsoft Office Interop / 加载项流程 |
 
+---
 
+## 04. Product philosophy
 
-## 技术栈
+ExportSlidesWithDPI_PPT follows four design principles:
 
-- **编程语言**：C#
-- **主要库**：Microsoft.Office.Interop.PowerPoint
-- **开发环境**：Visual Studio
+1. **Resolution control** — figure export should not depend on PowerPoint defaults.
+2. **Page-level precision** — users should export exactly the slides they need.
+3. **Academic format awareness** — PNG, JPG, and TIFF outputs should fit manuscript and presentation workflows.
+4. **Minimal interaction** — export should be faster than manual screenshot or repeated save-as operations.
 
-## 许可证
+---
 
-本项目采用 MIT 许可证，详情请参阅 [LICENSE](LICENSE) 文件。
+## 05. Architecture
+
+```text
+ExportSlidesWithDPI_PPT
+├── PowerPoint Add-in Layer
+│   ├── UI controls
+│   ├── page-range input
+│   ├── DPI setting
+│   └── format selection
+├── Export Logic
+│   ├── current slide export
+│   ├── custom page range parser
+│   ├── all-slide export
+│   └── output path manager
+└── Office Interop Layer
+    ├── PowerPoint presentation object
+    ├── slide object access
+    └── image export API
+```
+
+---
+
+## 06. Quick start
+
+```bash
+git clone https://github.com/groele/ExportSlidesWithDPI_PPT.git
+cd ExportSlidesWithDPI_PPT
+```
+
+Development environment:
+
+| Requirement | Recommendation |
+|---|---|
+| OS | Windows |
+| PowerPoint | Microsoft PowerPoint desktop version |
+| IDE | Visual Studio |
+| Language | C# |
+| API | Microsoft.Office.Interop.PowerPoint |
+
+Build the project in Visual Studio and install/load the add-in according to the generated Office add-in package.
+
+---
+
+## 07. Recommended workflow
+
+```text
+Prepare slide figure → Choose page range
+                     → Set DPI and image format
+                     → Select output folder
+                     → Export high-resolution images
+                     → Use in manuscript / poster / presentation
+```
+
+Page-range examples:
+
+| Input | Meaning |
+|---|---|
+| `0` | Export the currently selected slide |
+| `1,3-5` | Export slide 1 and slides 3 to 5 |
+| `all` | Export all slides |
+| `2,4,6-8` | Export custom mixed ranges |
+
+---
+
+## 08. Roadmap
+
+- [ ] Add detailed installation guide with screenshots
+- [ ] Add batch export preset profiles
+- [ ] Add automatic file naming templates
+- [ ] Add transparent-background export notes where supported
+- [ ] Add manuscript/journal DPI recommendations
+- [ ] Add export log for reproducibility
+- [ ] Add integration notes with Scientific Color Lab
+
+---
+
+## 09. Privacy and data ownership
+
+ExportSlidesWithDPI_PPT runs locally with PowerPoint. Slide content and exported images remain on the user's machine unless manually shared or uploaded.
+
+---
+
+## 10. Related projects
+
+- **PPT Presentation Timer** — academic presentation timing utility
+- **Scientific Color Lab** — scientific color and visualization workspace
+- **ManuGuide** — Microsoft Word manuscript formatting and style checker
+- **ResearchFlow Companion** — research workflow operating system
+
+---
+
+## 11. License
+
+MIT License.
+
+Developed by **Shikun Hou / groele**.
