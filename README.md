@@ -3,7 +3,7 @@
 # ExportSlidesWithDPI_PPT
 
 **面向论文图件与学术展示的 PowerPoint 高 DPI 幻灯片导出插件**  
-*PowerPoint export utility for high-DPI slide images, selected-page export, and publication/presentation-ready visual assets.*
+*PowerPoint export utility for high-DPI images and PDFs, selected-page export, and publication/presentation-ready visual assets.*
 
 ![Type](https://img.shields.io/badge/type-PowerPoint%20Add--in-blue?style=flat-square)
 ![Domain](https://img.shields.io/badge/domain-slide%20export%20%2F%20figures-green?style=flat-square)
@@ -45,7 +45,8 @@ PowerPoint is widely used to assemble scientific diagrams and presentation figur
 |---|---|---|
 | Page Range Export | Exports current slide, selected pages, ranges, or all slides | 支持当前页、指定页码、页码区间和全部页面导出 |
 | High-DPI Control | Allows custom DPI settings, with 300 DPI as a common academic default | 支持自定义 DPI，常用 300 DPI 用于学术图件 |
-| Multi-format Export | Supports PNG, JPG, and TIFF image formats | 支持 PNG、JPG、TIFF 图片格式 |
+| Multi-format Export | Supports PDF, PNG, JPG, BMP, and TIFF output | 支持 PDF、PNG、JPG、BMP、TIFF 导出 |
+| PDF White-Border Crop | Exports native vector PDF without cropping, or lossless cropped PDF at the chosen DPI | PDF 不裁切时保留原生矢量内容；裁切时按 DPI 无损输出 |
 | Save Path Selection | Lets users choose the output directory | 支持选择导出保存路径 |
 | Academic Figure Workflow | Supports manuscript figures, presentations, posters, and graphical assets | 服务论文图件、学术汇报、海报和图形摘要 |
 | PowerPoint Integration | Uses Microsoft Office Interop / add-in workflow | 基于 Microsoft Office Interop / 加载项流程 |

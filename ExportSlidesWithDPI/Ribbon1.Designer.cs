@@ -36,28 +36,22 @@
         {
             this.PicExport = this.Factory.CreateRibbonTab();
             this.group1 = this.Factory.CreateRibbonGroup();
-            this.label1 = this.Factory.CreateRibbonLabel();
             this.button5 = this.Factory.CreateRibbonButton();
-            this.button6 = this.Factory.CreateRibbonButton();
             this.button2 = this.Factory.CreateRibbonButton();
+            this.separator1 = this.Factory.CreateRibbonSeparator();
+            this.button6 = this.Factory.CreateRibbonButton();
             this.group2 = this.Factory.CreateRibbonGroup();
-            this.label2 = this.Factory.CreateRibbonLabel();
             this.comboBox1 = this.Factory.CreateRibbonComboBox();
             this.group3 = this.Factory.CreateRibbonGroup();
-            this.label3 = this.Factory.CreateRibbonLabel();
             this.comboBox2 = this.Factory.CreateRibbonComboBox();
             this.group4 = this.Factory.CreateRibbonGroup();
-            this.label4 = this.Factory.CreateRibbonLabel();
             this.editBox1 = this.Factory.CreateRibbonEditBox();
             this.group6 = this.Factory.CreateRibbonGroup();
-            this.label6 = this.Factory.CreateRibbonLabel();
             this.checkBox1 = this.Factory.CreateRibbonCheckBox();
             this.editBox2 = this.Factory.CreateRibbonEditBox();
             this.group5 = this.Factory.CreateRibbonGroup();
-            this.label5 = this.Factory.CreateRibbonLabel();
             this.button4 = this.Factory.CreateRibbonButton();
             this.button3 = this.Factory.CreateRibbonButton();
-            this.separator1 = this.Factory.CreateRibbonSeparator();
             this.PicExport.SuspendLayout();
             this.group1.SuspendLayout();
             this.group2.SuspendLayout();
@@ -75,22 +69,17 @@
             this.PicExport.Groups.Add(this.group4);
             this.PicExport.Groups.Add(this.group6);
             this.PicExport.Groups.Add(this.group5);
-            this.PicExport.Label = "输出图片";
+            this.PicExport.Label = "导出幻灯片";
             this.PicExport.Name = "PicExport";
             // 
             // group1
             // 
-            this.group1.Items.Add(this.label1);
             this.group1.Items.Add(this.button5);
             this.group1.Items.Add(this.button2);
             this.group1.Items.Add(this.separator1);
             this.group1.Items.Add(this.button6);
+            this.group1.Label = "图片导出";
             this.group1.Name = "group1";
-            // 
-            // label1
-            // 
-            this.label1.Label = "文件";
-            this.label1.Name = "label1";
             // 
             // button5
             // 
@@ -99,65 +88,54 @@
             this.button5.SuperTip = "选择保存路径";
             this.button5.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.button5_Click_1);
             // 
-            // button6
-            // 
-            this.button6.Label = "图片另存为";
-            this.button6.Name = "button6";
-            this.button6.SuperTip = "选择图片保存位置";
-            this.button6.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.button6_Click_1);
-            // 
             // button2
             // 
             this.button2.Label = "导出";
             this.button2.Name = "button2";
             this.button2.SuperTip = "执行导出操作";
+            //
+            // separator1
+            //
+            this.separator1.Name = "separator1";
+            //
+            // button6
+            //
+            this.button6.Label = "文件另存为";
+            this.button6.Name = "button6";
+            this.button6.SuperTip = "为单张图片或 PDF 选择文件名和保存位置";
+            this.button6.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.button6_Click_1);
             // 
             // group2
             // 
-            this.group2.Items.Add(this.label2);
             this.group2.Items.Add(this.comboBox1);
+            this.group2.Label = "分辨率";
             this.group2.Name = "group2";
-            // 
-            // label2
-            // 
-            this.label2.Label = "图片分辨率";
-            this.label2.Name = "label2";
             // 
             // comboBox1
             // 
             this.comboBox1.Label = "分辨率";
             this.comboBox1.Name = "comboBox1";
-            this.comboBox1.SuperTip = "建议300dpi，600dpi第一次到处会有30s左右卡顿，后续速度提升";
+            this.comboBox1.SuperTip = "图片导出与“PDF + 裁剪白边”使用此分辨率；不裁剪的 PDF 保持矢量内容。";
             this.comboBox1.Text = null;
             // 
             // group3
             // 
-            this.group3.Items.Add(this.label3);
             this.group3.Items.Add(this.comboBox2);
+            this.group3.Label = "图片格式";
             this.group3.Name = "group3";
-            // 
-            // label3
-            // 
-            this.label3.Label = "图片格式";
-            this.label3.Name = "label3";
             // 
             // comboBox2
             // 
             this.comboBox2.Label = "格式";
             this.comboBox2.Name = "comboBox2";
-            this.comboBox2.SuperTip = "请选择导出图片的格式";
+            this.comboBox2.SuperTip = "支持 PDF、JPG、PNG、BMP、TIF。PDF 裁剪时会按所选 DPI 生成。";
             this.comboBox2.Text = null;
             // 
             // group4
             // 
-            this.group4.Items.Add(this.label4);
             this.group4.Items.Add(this.editBox1);
+            this.group4.Label = "导出范围";
             this.group4.Name = "group4";
-            // 
-            // label4
-            // 
-            this.label4.Label = "导出范围";
-            this.label4.Name = "label4";
             // 
             // editBox1
             // 
@@ -168,40 +146,30 @@
             // 
             // group6
             // 
-            this.group6.Items.Add(this.label6);
             this.group6.Items.Add(this.checkBox1);
             this.group6.Items.Add(this.editBox2);
+            this.group6.Label = "裁切白边";
             this.group6.Name = "group6";
-            // 
-            // label6
-            // 
-            this.label6.Label = "裁剪白边";
-            this.label6.Name = "label6";
             // 
             // checkBox1
             // 
             this.checkBox1.Label = "启用裁剪";
             this.checkBox1.Name = "checkBox1";
-            this.checkBox1.SuperTip = "启用自动裁剪图片四周的白边";
+            this.checkBox1.SuperTip = "自动裁剪图片或 PDF 各页四周的白边；PDF 裁剪后为高分辨率图像页。";
             // 
             // editBox2
             // 
             this.editBox2.Label = "留白大小";
             this.editBox2.Name = "editBox2";
-            this.editBox2.SuperTip = "设置裁剪后保留的边距大小（单位：像素）\n建议值：0-50像素";
+            this.editBox2.SuperTip = "设置裁剪后保留的边距大小（单位：像素；PDF 裁剪按导出 DPI 换算）。建议值：0-50。";
             this.editBox2.Text = "0";
             // 
             // group5
             // 
-            this.group5.Items.Add(this.label5);
             this.group5.Items.Add(this.button4);
             this.group5.Items.Add(this.button3);
+            this.group5.Label = "帮助";
             this.group5.Name = "group5";
-            // 
-            // label5
-            // 
-            this.label5.Label = "帮助";
-            this.label5.Name = "label5";
             // 
             // button4
             // 
@@ -212,10 +180,6 @@
             // 
             this.button3.Label = "关于";
             this.button3.Name = "button3";
-            // 
-            // separator1
-            // 
-            this.separator1.Name = "separator1";
             // 
             // Ribbon1
             // 
@@ -245,13 +209,9 @@
 
         internal Microsoft.Office.Tools.Ribbon.RibbonTab PicExport;
         internal Microsoft.Office.Tools.Ribbon.RibbonGroup group1;
-        internal Microsoft.Office.Tools.Ribbon.RibbonLabel label1;
         internal Microsoft.Office.Tools.Ribbon.RibbonGroup group2;
-        internal Microsoft.Office.Tools.Ribbon.RibbonLabel label2;
         internal Microsoft.Office.Tools.Ribbon.RibbonGroup group3;
-        internal Microsoft.Office.Tools.Ribbon.RibbonLabel label3;
         internal Microsoft.Office.Tools.Ribbon.RibbonGroup group4;
-        internal Microsoft.Office.Tools.Ribbon.RibbonLabel label4;
         internal Microsoft.Office.Tools.Ribbon.RibbonComboBox comboBox1;
         internal Microsoft.Office.Tools.Ribbon.RibbonComboBox comboBox2;
         internal Microsoft.Office.Tools.Ribbon.RibbonEditBox editBox1;
@@ -259,11 +219,9 @@
         internal Microsoft.Office.Tools.Ribbon.RibbonButton button5;
         internal Microsoft.Office.Tools.Ribbon.RibbonButton button6;
         internal Microsoft.Office.Tools.Ribbon.RibbonGroup group5;
-        internal Microsoft.Office.Tools.Ribbon.RibbonLabel label5;
         internal Microsoft.Office.Tools.Ribbon.RibbonButton button3;
         internal Microsoft.Office.Tools.Ribbon.RibbonButton button4;
         internal Microsoft.Office.Tools.Ribbon.RibbonGroup group6;
-        internal Microsoft.Office.Tools.Ribbon.RibbonLabel label6;
         internal Microsoft.Office.Tools.Ribbon.RibbonCheckBox checkBox1;
         internal Microsoft.Office.Tools.Ribbon.RibbonEditBox editBox2;
         internal Microsoft.Office.Tools.Ribbon.RibbonSeparator separator1;

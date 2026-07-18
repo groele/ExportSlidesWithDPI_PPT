@@ -6,14 +6,13 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
-using System.Threading.Tasks;
-using System.Threading;
 using System.Diagnostics;
 using PowerPoint = Microsoft.Office.Interop.PowerPoint;
+using Office = Microsoft.Office.Core;
 /// <summary>
 /// Export the specified slide as an image, and support setting the format and DPI
 /// </summary>
-/// V 4.0  2025.05.30
+/// V 6.0  2026.07.18
 /// 中文版本
 namespace ExportSlidesWithDPIDoing
 {
@@ -28,24 +27,14 @@ namespace ExportSlidesWithDPIDoing
         private ProgressForm progressForm;
         private bool enableCropWhiteSpace = false;
         private int whiteSpaceMargin = 0; // 四周留白大小（像素）
-        private string selectedImageFileName = string.Empty; // 添加变量存储用户选择的文件名
-        private readonly Dictionary<string, string> formatMap = new Dictionary<string, string>
+        private string selectedExportFileName = string.Empty;
+        private readonly Dictionary<string, string> imageFormatMap = new Dictionary<string, string>
         {
             { "jpg", "JPG" },
             { "png", "PNG" },
             { "bmp", "BMP" },
             { "tif", "TIF" }
         };
-
-        // 性能优化相关参数
-        private const int BATCH_SIZE = 10; // 增加批处理大小
-        private const int MEMORY_THRESHOLD = 85; // 内存使用率阈值（百分比）
-        private const int SPEED_LIMIT = 500; // 减少速度限制
-        private const int MAX_RETRY_COUNT = 3; // 最大重试次数
-        private const int RETRY_DELAY = 1000; // 减少重试延迟
-        private const int MAX_PARALLEL_TASKS = 4; // 最大并行任务数
-        private CancellationTokenSource cancellationTokenSource;
-        private SemaphoreSlim semaphore;
 
         #region Ribbon 初始化
         private void Ribbon1_Load(object sender, RibbonUIEventArgs e)
@@ -57,7 +46,7 @@ namespace ExportSlidesWithDPIDoing
                 InitializeControls();
                 BindEvents();
 
-                editBox1.Label = "Page";
+                editBox1.Label = "页码";
                 editBox1.Text = "0";
             }
             catch (Exception ex)
@@ -101,46 +90,6 @@ namespace ExportSlidesWithDPIDoing
                     }
                 }
 
-                // 安全地取消和释放 CancellationTokenSource
-                if (cancellationTokenSource != null)
-                {
-                    try
-                    {
-                        if (!cancellationTokenSource.IsCancellationRequested)
-                        {
-                            cancellationTokenSource.Cancel();
-                        }
-                    }
-                    catch (ObjectDisposedException)
-                    {
-                        // 忽略已释放的异常
-                    }
-                    finally
-                    {
-                        try
-                        {
-                            cancellationTokenSource.Dispose();
-                        }
-                        catch (ObjectDisposedException)
-                        {
-                            // 忽略已释放的异常
-                        }
-                    }
-                }
-
-                // 安全地释放信号量
-                if (semaphore != null)
-                {
-                    try
-                    {
-                        semaphore.Dispose();
-                    }
-                    catch (ObjectDisposedException)
-                    {
-                        // 忽略已释放的异常
-                    }
-                }
-
                 // 重置状态
                 isExporting = false;
                 selectedPages.Clear();
@@ -168,7 +117,7 @@ namespace ExportSlidesWithDPIDoing
                 comboBox1.Text = currentDPI.ToString();
 
                 comboBox2.Items.Clear();
-                foreach (var format in formatMap.Keys)
+                foreach (var format in imageFormatMap.Keys.Concat(new[] { "pdf" }))
                 {
                     var item = Factory.CreateRibbonDropDownItem();
                     item.Label = format.ToUpper();
@@ -293,16 +242,16 @@ namespace ExportSlidesWithDPIDoing
         {
             try
             {
-                var format = comboBox2.Text.ToLower();
-                if (formatMap.ContainsKey(format))
+                var format = comboBox2.Text.Trim().ToLowerInvariant();
+                if (imageFormatMap.ContainsKey(format) || format == "pdf")
                 {
                     exportFormat = format;
-                    comboBox1.Enabled = true;
+                    comboBox1.Enabled = true; // PDF 裁剪模式也需要 DPI
                 }
                 else
                 {
                     ShowMessageBox(
-                        text: "仅支持 PNG/JPG/BMP/TIF 格式",
+                    text: "仅支持 PDF、PNG、JPG、BMP、TIF 格式",
                         caption: "格式错误",
                         buttons: MessageBoxButtons.OK,
                         icon: MessageBoxIcon.Warning
@@ -416,415 +365,325 @@ namespace ExportSlidesWithDPIDoing
             return pages.OrderBy(p => p).ToList();
         }
 
-        private async void Button2_Click(object sender, RibbonControlEventArgs e)
+        private void Button2_Click(object sender, RibbonControlEventArgs e)
         {
             if (isExporting)
             {
-                ShowMessageBox(
-                    text: "正在导出中，请等待当前任务完成",
-                    caption: "导出中",
-                    buttons: MessageBoxButtons.OK,
-                    icon: MessageBoxIcon.Warning
-                );
-                return;
-            }
-
-            if (string.IsNullOrEmpty(saveFolderPath))
-            {
-                ShowMessageBox(
-                    text: "请先选择保存路径！",
-                    caption: "路径未设置",
-                    buttons: MessageBoxButtons.OK,
-                    icon: MessageBoxIcon.Warning
-                );
+                ShowMessageBox("正在导出中，请等待当前任务完成", "导出中", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
             try
             {
-                // 检查保存路径的权限
-                try
-                {
-                    string testFile = Path.Combine(saveFolderPath, "test_write.tmp");
-                    File.WriteAllText(testFile, "test");
-                    File.Delete(testFile);
-                }
-                catch (Exception ex)
-                {
-                    ShowMessageBox(
-                        text: $"保存路径没有写入权限：{ex.Message}",
-                        caption: "权限错误",
-                        buttons: MessageBoxButtons.OK,
-                        icon: MessageBoxIcon.Error
-                    );
-                    return;
-                }
-
-                // 检查磁盘空间
-                var drive = new DriveInfo(Path.GetPathRoot(saveFolderPath));
-                if (drive.AvailableFreeSpace < 1024 * 1024 * 100) // 100MB
-                {
-                    ShowMessageBox(
-                        text: "磁盘空间不足，请确保有至少100MB的可用空间",
-                        caption: "空间不足",
-                        buttons: MessageBoxButtons.OK,
-                        icon: MessageBoxIcon.Warning
-                    );
-                    return;
-                }
+                EnsureOutputFolderIsWritable();
+                var pres = app.ActivePresentation ?? throw new InvalidOperationException("无法访问当前演示文稿");
+                selectedPages = ParsePageRange(editBox1.Text, pres.Slides.Count);
+                if (selectedPages.Count == 0)
+                    throw new InvalidOperationException("没有有效的幻灯片被选择");
+                if (!string.IsNullOrEmpty(selectedExportFileName) && selectedPages.Count != 1 && exportFormat != "pdf")
+                    throw new InvalidOperationException("“另存为”一次只能导出一张图片；请改用“文件夹”导出多张图片。");
 
                 isExporting = true;
-                cancellationTokenSource = new CancellationTokenSource();
-                semaphore = new SemaphoreSlim(MAX_PARALLEL_TASKS); // 初始化信号量
-
-                var pres = app.ActivePresentation;
-                if (pres == null)
+                SetExportControlsEnabled(false);
+                if (exportFormat == "pdf")
                 {
-                    throw new InvalidOperationException("无法访问当前演示文稿");
-                }
-
-                int totalSlides = pres.Slides.Count;
-                if (totalSlides == 0)
-                {
-                    throw new InvalidOperationException("当前演示文稿没有幻灯片");
-                }
-
-                selectedPages = ParsePageRange(editBox1.Text, totalSlides);
-
-                if (selectedPages.Count == 0)
-                {
-                    ShowMessageBox(
-                        text: "没有有效的幻灯片被选择",
-                        caption: "导出中止",
-                        buttons: MessageBoxButtons.OK,
-                        icon: MessageBoxIcon.Warning
-                    );
+                    ExportPdf(pres, selectedPages);
                     return;
                 }
 
-                // 创建进度窗体
-                progressForm = new ProgressForm();
-                progressForm.TotalSlides = selectedPages.Count;
+                progressForm = new ProgressForm { TotalSlides = selectedPages.Count };
                 progressForm.Show();
-
-                int exportedCount = 0;
                 var failedSlides = new List<int>();
-                var errorMessages = new List<string>();
-
-                // 分批处理幻灯片
-                for (int i = 0; i < selectedPages.Count; i += BATCH_SIZE)
+                foreach (int slideNumber in selectedPages)
                 {
-                    if (cancellationTokenSource.Token.IsCancellationRequested)
-                        break;
-
-                    var batch = selectedPages.Skip(i).Take(BATCH_SIZE).ToList();
-                    var tasks = new List<Task<bool>>();
-
-                    foreach (int slideNumber in batch)
-                    {
-                        if (cancellationTokenSource.Token.IsCancellationRequested)
-                            break;
-
-                        // 检查内存使用情况
-                        if (GetMemoryUsage() > MEMORY_THRESHOLD)
-                        {
-                            await Task.Delay(1000).ConfigureAwait(false);
-                            if (GetMemoryUsage() > MEMORY_THRESHOLD)
-                            {
-                                if (!progressForm.IsDisposed)
-                                {
-                                    progressForm.Invoke((MethodInvoker)delegate
-                                    {
-                                        ShowMessageBox(
-                                            text: "系统内存使用率过高，导出已暂停。请关闭其他程序后重试。",
-                                            caption: "内存警告",
-                                            buttons: MessageBoxButtons.OK,
-                                            icon: MessageBoxIcon.Warning
-                                        );
-                                    });
-                                }
-                                cancellationTokenSource.Cancel();
-                                break;
-                            }
-                        }
-
-                        tasks.Add(ExportSlideAsync(pres, slideNumber));
-                    }
-
                     try
                     {
-                        var results = await Task.WhenAll(tasks).ConfigureAwait(false);
-                        for (int j = 0; j < results.Length; j++)
-                        {
-                            if (results[j])
-                                exportedCount++;
-                            else
-                                failedSlides.Add(batch[j]);
-                        }
+                        ExportImageSlide(pres, slideNumber);
+                        progressForm.UpdateProgress();
+                        System.Windows.Forms.Application.DoEvents();
                     }
                     catch (Exception ex)
                     {
-                        errorMessages.Add($"批处理 {i / BATCH_SIZE + 1} 失败: {ex.Message}");
+                        failedSlides.Add(slideNumber);
+                        Debug.WriteLine($"幻灯片 {slideNumber} 导出失败：{ex}");
                     }
-
-                    // 强制进行垃圾回收
-                    GC.Collect();
-                    GC.WaitForPendingFinalizers();
                 }
 
-                if (!progressForm.IsDisposed)
+                if (failedSlides.Count > 0)
                 {
-                    progressForm.Invoke((MethodInvoker)delegate
-                    {
-                        progressForm.Close();
-                    });
-                }
-
-                // 只在有错误时显示消息框
-                if (failedSlides.Count > 0 || errorMessages.Count > 0)
-                {
-                    string resultMessage = $"成功导出 {exportedCount}/{selectedPages.Count} 张幻灯片";
-                    if (failedSlides.Count > 0)
-                    {
-                        resultMessage += $"\n\n导出失败的幻灯片：{string.Join(", ", failedSlides)}";
-                    }
-                    if (errorMessages.Count > 0)
-                    {
-                        resultMessage += $"\n\n错误信息：\n{string.Join("\n", errorMessages)}";
-                    }
-
                     ShowMessageBox(
-                        text: resultMessage,
-                        caption: "导出完成",
-                        buttons: MessageBoxButtons.OK,
-                        icon: MessageBoxIcon.Warning
-                    );
+                        $"成功导出 {selectedPages.Count - failedSlides.Count}/{selectedPages.Count} 张图片。\n失败页码：{string.Join(", ", failedSlides)}",
+                        "部分导出失败",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Warning);
                 }
             }
             catch (Exception ex)
             {
-                if (!progressForm.IsDisposed)
-                {
-                    progressForm.Invoke((MethodInvoker)delegate
-                    {
-                        ShowMessageBox(
-                            text: $"导出失败：{ex.Message}",
-                            caption: "严重错误",
-                            buttons: MessageBoxButtons.OK,
-                            icon: MessageBoxIcon.Error
-                        );
-                    });
-                }
+                ShowMessageBox($"导出失败：{ex.Message}", "导出错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
                 isExporting = false;
+                SetExportControlsEnabled(true);
                 if (progressForm != null && !progressForm.IsDisposed)
-                {
-                    progressForm.Invoke((MethodInvoker)delegate
-                    {
-                        progressForm.Close();
-                    });
-                }
-                cancellationTokenSource?.Dispose();
-                semaphore?.Dispose();
+                    progressForm.Close();
+                progressForm = null;
             }
         }
 
-        private double GetMemoryUsage()
+        private void SetExportControlsEnabled(bool enabled)
         {
+            button2.Enabled = enabled;
+            button5.Enabled = enabled;
+            button6.Enabled = enabled;
+            comboBox1.Enabled = enabled;
+            comboBox2.Enabled = enabled;
+            editBox1.Enabled = enabled;
+            checkBox1.Enabled = enabled;
+            editBox2.Enabled = enabled && enableCropWhiteSpace;
+            button3.Enabled = enabled;
+            button4.Enabled = enabled;
+        }
+
+        private void EnsureOutputFolderIsWritable()
+        {
+            if (string.IsNullOrWhiteSpace(saveFolderPath))
+                throw new InvalidOperationException("请先选择保存路径。");
+            Directory.CreateDirectory(saveFolderPath);
+            string root = Path.GetPathRoot(saveFolderPath);
+            if (!string.IsNullOrEmpty(root) && new DriveInfo(root).AvailableFreeSpace < 100L * 1024 * 1024)
+                throw new IOException("保存磁盘可用空间不足 100 MB。");
+            string testFile = Path.Combine(saveFolderPath, ".exportslides-write-test-" + Guid.NewGuid().ToString("N") + ".tmp");
             try
             {
-                var process = Process.GetCurrentProcess();
-                var memoryUsage = process.WorkingSet64 / (1024.0 * 1024.0 * 1024.0); // 转换为GB
-                var totalMemory = new PerformanceCounter("Memory", "Available MBytes").NextValue() / 1024.0; // 转换为GB
-                return (memoryUsage / (memoryUsage + totalMemory)) * 100;
+                File.WriteAllText(testFile, "test");
             }
-            catch
+            finally
             {
-                return 0;
+                if (File.Exists(testFile)) File.Delete(testFile);
             }
         }
 
-        private async Task<bool> ExportSlideAsync(PowerPoint.Presentation pres, int slideNumber)
+        private void ExportImageSlide(PowerPoint.Presentation pres, int slideNumber)
         {
-            int retryCount = 0;
-            while (retryCount < MAX_RETRY_COUNT)
+            var slide = pres.Slides[slideNumber];
+            string extension = exportFormat;
+            string fileName = ConsumeSelectedFileName() ??
+                $"{Path.GetFileNameWithoutExtension(pres.Name)}_Slide{slideNumber}_{DateTime.Now:yyyyMMddHHmmssfff}.{extension}";
+            string fullPath = Path.Combine(saveFolderPath, fileName);
+            int outputWidth = (int)(pres.PageSetup.SlideWidth * currentDPI / 72.0);
+            int outputHeight = (int)(pres.PageSetup.SlideHeight * currentDPI / 72.0);
+            string stagingPath = CreateStagingPath(fullPath);
+
+            try
+            {
+                using (var tempFile = new TempFile(extension))
+                {
+                    // PowerPoint COM must remain on the Office UI thread. Do not wrap this in Task.Run.
+                    slide.Export(tempFile.Path, imageFormatMap[extension], outputWidth, outputHeight);
+                    if (!enableCropWhiteSpace)
+                    {
+                        File.Copy(tempFile.Path, stagingPath, false);
+                    }
+                    else
+                    {
+                        using (var image = System.Drawing.Image.FromFile(tempFile.Path))
+                        using (var croppedImage = CropWhiteSpace(image, whiteSpaceMargin))
+                        {
+                            var encoder = GetEncoder(extension);
+                            var encoderParams = GetEncoderParameters(extension);
+                            try
+                            {
+                                if (encoder != null && encoderParams != null)
+                                    croppedImage.Save(stagingPath, encoder, encoderParams);
+                                else
+                                    croppedImage.Save(stagingPath, GetImageFormat(extension));
+                            }
+                            finally
+                            {
+                                encoderParams?.Dispose();
+                            }
+                        }
+                    }
+                }
+
+                VerifyOutputFile(stagingPath);
+                CommitOutput(stagingPath, fullPath);
+            }
+            finally
+            {
+                if (File.Exists(stagingPath)) File.Delete(stagingPath);
+            }
+        }
+
+        private void ExportPdf(PowerPoint.Presentation pres, IList<int> pages)
+        {
+            string fileName = ConsumeSelectedFileName() ??
+                $"{Path.GetFileNameWithoutExtension(pres.Name)}_{DateTime.Now:yyyyMMddHHmmssfff}.pdf";
+            fileName = Path.ChangeExtension(fileName, ".pdf");
+            string fullPath = Path.Combine(saveFolderPath, fileName);
+            string stagingPath = CreateStagingPath(fullPath);
+
+            try
+            {
+                var contiguousRanges = ToContiguousRanges(pages).ToList();
+                if (!enableCropWhiteSpace && contiguousRanges.Count == 1)
+                {
+                    ExportVectorPdf(pres, contiguousRanges[0], stagingPath);
+                }
+                else
+                {
+                    // PowerPoint only accepts one continuous PrintRange for a single PDF export.
+                    // Keep the user's non-contiguous page selection by using the raster-PDF path.
+                    progressForm = new ProgressForm { TotalSlides = pages.Count };
+                    progressForm.Show();
+                    int outputWidth = (int)(pres.PageSetup.SlideWidth * currentDPI / 72.0);
+                    int outputHeight = (int)(pres.PageSetup.SlideHeight * currentDPI / 72.0);
+                    using (var pdf = new RasterPdfDocument(stagingPath, pages.Count))
+                    {
+                        foreach (int slideNumber in pages)
+                        {
+                            using (var tempFile = new TempFile("png"))
+                            {
+                                pres.Slides[slideNumber].Export(tempFile.Path, "PNG", outputWidth, outputHeight);
+                                using (var image = System.Drawing.Image.FromFile(tempFile.Path))
+                                using (var croppedImage = enableCropWhiteSpace
+                                    ? CropWhiteSpace(image, whiteSpaceMargin)
+                                    : new System.Drawing.Bitmap(image))
+                                {
+                                    pdf.AddPage(croppedImage, currentDPI);
+                                }
+                            }
+                            progressForm.UpdateProgress();
+                            System.Windows.Forms.Application.DoEvents();
+                        }
+                        pdf.Complete();
+                    }
+                }
+
+                VerifyOutputFile(stagingPath);
+                CommitOutput(stagingPath, fullPath);
+            }
+            finally
+            {
+                if (File.Exists(stagingPath)) File.Delete(stagingPath);
+            }
+        }
+
+        private void ExportVectorPdf(PowerPoint.Presentation pres, Tuple<int, int> pageRange, string outputPath)
+        {
+            PowerPoint.PrintRanges ranges = pres.PrintOptions.Ranges;
+            var savedRanges = new List<Tuple<int, int>>();
+            for (int i = 1; i <= ranges.Count; i++)
+            {
+                PowerPoint.PrintRange saved = ranges[i];
+                savedRanges.Add(Tuple.Create(saved.Start, saved.End));
+            }
+            ranges.ClearAll();
+            PowerPoint.PrintRange range = ranges.Add(pageRange.Item1, pageRange.Item2);
+
+            try
+            {
+                pres.ExportAsFixedFormat(
+                    outputPath,
+                    PowerPoint.PpFixedFormatType.ppFixedFormatTypePDF,
+                    PowerPoint.PpFixedFormatIntent.ppFixedFormatIntentPrint,
+                    Office.MsoTriState.msoFalse,
+                    PowerPoint.PpPrintHandoutOrder.ppPrintHandoutVerticalFirst,
+                    PowerPoint.PpPrintOutputType.ppPrintOutputSlides,
+                    Office.MsoTriState.msoFalse,
+                    range,
+                    PowerPoint.PpPrintRangeType.ppPrintSlideRange,
+                    string.Empty,
+                    true,
+                    true,
+                    true,
+                    false,
+                    false,
+                    Type.Missing);
+            }
+            finally
+            {
+                ranges.ClearAll();
+                foreach (var savedRange in savedRanges)
+                    ranges.Add(savedRange.Item1, savedRange.Item2);
+            }
+        }
+
+        private static IEnumerable<Tuple<int, int>> ToContiguousRanges(IList<int> pages)
+        {
+            int start = pages[0];
+            int end = start;
+            for (int i = 1; i < pages.Count; i++)
+            {
+                if (pages[i] == end + 1)
+                {
+                    end = pages[i];
+                    continue;
+                }
+                yield return Tuple.Create(start, end);
+                start = end = pages[i];
+            }
+            yield return Tuple.Create(start, end);
+        }
+
+        private string ConsumeSelectedFileName()
+        {
+            if (string.IsNullOrEmpty(selectedExportFileName)) return null;
+            string fileName = selectedExportFileName;
+            selectedExportFileName = string.Empty;
+            return fileName;
+        }
+
+        private static void VerifyOutputFile(string path)
+        {
+            if (!File.Exists(path) || new FileInfo(path).Length == 0)
+                throw new IOException("导出文件未创建或内容为空。");
+        }
+
+        private static string CreateStagingPath(string outputPath)
+        {
+            string directory = Path.GetDirectoryName(outputPath);
+            string extension = Path.GetExtension(outputPath);
+            string baseName = Path.GetFileNameWithoutExtension(outputPath);
+            return Path.Combine(directory, baseName + "." + Guid.NewGuid().ToString("N") + ".part" + extension);
+        }
+
+        private static void CommitOutput(string stagingPath, string outputPath)
+        {
+            if (File.Exists(outputPath))
             {
                 try
                 {
-                    await semaphore.WaitAsync().ConfigureAwait(false);
-                    try
-                    {
-                        if (pres == null || pres.Slides == null)
-                        {
-                            throw new InvalidOperationException("演示文稿无效或已关闭");
-                        }
-
-                        if (slideNumber < 1 || slideNumber > pres.Slides.Count)
-                        {
-                            throw new ArgumentOutOfRangeException(nameof(slideNumber), "幻灯片编号超出范围");
-                        }
-
-                        var slide = pres.Slides[slideNumber];
-                        if (slide == null)
-                        {
-                            throw new InvalidOperationException("无法访问指定的幻灯片");
-                        }
-
-                        string extension = exportFormat.ToLower() == "tif" ? "tif" : exportFormat;
-                        string fileName;
-                        // 如果是图片另存为模式，使用用户选择的文件名
-                        if (!string.IsNullOrEmpty(selectedImageFileName))
-                        {
-                            fileName = selectedImageFileName;
-                            // 清除文件名，以便下次使用默认命名
-                            selectedImageFileName = string.Empty;
-                        }
-                        else
-                        {
-                            fileName = $"{Path.GetFileNameWithoutExtension(pres.Name)}_Slide{slideNumber}_{DateTime.Now:yyyyMMddHHmmss}.{extension}";
-                        }
-                        string fullPath = Path.Combine(saveFolderPath, fileName);
-
-                        // 检查目标文件夹是否存在且可写
-                        if (!Directory.Exists(saveFolderPath))
-                        {
-                            Directory.CreateDirectory(saveFolderPath);
-                        }
-
-                        // 如果文件已存在，先删除它
-                        if (File.Exists(fullPath))
-                        {
-                            try
-                            {
-                                File.Delete(fullPath);
-                            }
-                            catch (IOException)
-                            {
-                                throw new IOException($"文件 {fullPath} 正在被其他程序使用，无法替换");
-                            }
-                        }
-
-                        int baseWidth = (int)pres.PageSetup.SlideWidth;
-                        int baseHeight = (int)pres.PageSetup.SlideHeight;
-                        int outputWidth = (int)(baseWidth * currentDPI / 72.0);
-                        int outputHeight = (int)(baseHeight * currentDPI / 72.0);
-
-                        await Task.Run(() =>
-                        {
-                            using (var tempFile = new TempFile(extension))
-                            {
-                                try
-                                {
-                                    slide.Export(tempFile.Path, formatMap[extension], outputWidth, outputHeight);
-                                    
-                                    // 如果需要裁剪白边
-                                    if (enableCropWhiteSpace && (extension == "png" || extension == "jpg" || extension == "bmp" || extension == "tif"))
-                                    {
-                                        using (var image = System.Drawing.Image.FromFile(tempFile.Path))
-                                        {
-                                            var croppedImage = CropWhiteSpace(image, whiteSpaceMargin);
-                                            if (croppedImage != null)
-                                            {
-                                                try
-                                                {
-                                                    var encoder = GetEncoder(extension);
-                                                    var encoderParams = GetEncoderParameters(extension);
-                                                    if (encoder != null)
-                                                    {
-                                                        croppedImage.Save(fullPath, encoder, encoderParams);
-                                                    }
-                                                    else
-                                                    {
-                                                        croppedImage.Save(fullPath, GetImageFormat(extension));
-                                                    }
-                                                }
-                                                finally
-                                                {
-                                                    croppedImage.Dispose();
-                                                }
-                                            }
-                                        }
-                                    }
-                                    else
-                                    {
-                                        // 直接覆盖已存在的文件
-                                        if (File.Exists(fullPath))
-                                        {
-                                            File.Delete(fullPath);
-                                        }
-                                        File.Copy(tempFile.Path, fullPath, true);
-                                    }
-                                }
-                                catch (Exception ex)
-                                {
-                                    throw new Exception($"导出图片格式失败: {ex.Message}");
-                                }
-                            }
-                        }).ConfigureAwait(false);
-
-                        // 验证文件是否成功创建
-                        if (!File.Exists(fullPath))
-                        {
-                            throw new Exception("文件创建失败");
-                        }
-
-                        // 验证文件大小
-                        var fileInfo = new FileInfo(fullPath);
-                        if (fileInfo.Length == 0)
-                        {
-                            throw new Exception("导出的文件大小为0");
-                        }
-
-                        // 更新进度
-                        if (progressForm != null && !progressForm.IsDisposed)
-                        {
-                            progressForm.UpdateProgress();
-                        }
-                        return true;
-                    }
-                    finally
-                    {
-                        semaphore.Release();
-                    }
+                    File.Replace(stagingPath, outputPath, null, true);
+                    return;
                 }
-                catch (Exception ex)
-                {
-                    retryCount++;
-                    if (retryCount >= MAX_RETRY_COUNT)
-                    {
-                        await Task.Run(() =>
-                        {
-                            if (!progressForm.IsDisposed)
-                            {
-                                progressForm.Invoke((MethodInvoker)delegate
-                                {
-                                    ShowMessageBox(
-                                        text: $"幻灯片 {slideNumber} 导出失败（已重试{retryCount}次）：{ex.Message}",
-                                        caption: "导出错误",
-                                        buttons: MessageBoxButtons.OK,
-                                        icon: MessageBoxIcon.Error
-                                    );
-                                });
-                            }
-                        }).ConfigureAwait(false);
-                        return false;
-                    }
-                    await Task.Delay(RETRY_DELAY * retryCount).ConfigureAwait(false);
-                }
+                catch (PlatformNotSupportedException) { }
+                catch (IOException) { }
             }
-            return false;
+            File.Move(stagingPath, outputPath);
         }
 
         private System.Drawing.Image CropWhiteSpace(System.Drawing.Image image, int margin)
         {
             try
             {
-                using (var bitmap = new System.Drawing.Bitmap(image))
+                // Convert once to a predictable BGRA layout, then scan the raw buffer.
+                // GetPixel incurs a GDI+ call per pixel and is prohibitively slow at 600 DPI.
+                using (var bitmap = new System.Drawing.Bitmap(
+                    image.Width,
+                    image.Height,
+                    System.Drawing.Imaging.PixelFormat.Format32bppArgb))
                 {
                     int width = bitmap.Width;
                     int height = bitmap.Height;
+
+                    using (var graphics = System.Drawing.Graphics.FromImage(bitmap))
+                    {
+                        graphics.CompositingMode = System.Drawing.Drawing2D.CompositingMode.SourceCopy;
+                        graphics.DrawImageUnscaled(image, 0, 0);
+                    }
 
                     // 找到非白色区域的边界
                     int left = width;
@@ -832,19 +691,37 @@ namespace ExportSlidesWithDPIDoing
                     int right = 0;
                     int bottom = 0;
 
-                    for (int y = 0; y < height; y++)
+                    var rectangle = new System.Drawing.Rectangle(0, 0, width, height);
+                    var data = bitmap.LockBits(
+                        rectangle,
+                        System.Drawing.Imaging.ImageLockMode.ReadOnly,
+                        System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                    try
                     {
-                        for (int x = 0; x < width; x++)
+                        int stride = Math.Abs(data.Stride);
+                        // A full 600-DPI slide can require more than 140 MB here. Reuse one row buffer.
+                        var pixels = new byte[stride];
+
+                        for (int y = 0; y < height; y++)
                         {
-                            var pixel = bitmap.GetPixel(x, y);
-                            if (!IsWhitePixel(pixel))
+                            var rowPointer = new IntPtr(data.Scan0.ToInt64() + (long)y * data.Stride);
+                            System.Runtime.InteropServices.Marshal.Copy(rowPointer, pixels, 0, stride);
+                            for (int x = 0; x < width; x++)
                             {
-                                left = Math.Min(left, x);
-                                top = Math.Min(top, y);
-                                right = Math.Max(right, x);
-                                bottom = Math.Max(bottom, y);
+                                int offset = x * 4;
+                                if (!IsWhitePixel(pixels[offset], pixels[offset + 1], pixels[offset + 2], pixels[offset + 3]))
+                                {
+                                    left = Math.Min(left, x);
+                                    top = Math.Min(top, y);
+                                    right = Math.Max(right, x);
+                                    bottom = Math.Max(bottom, y);
+                                }
                             }
                         }
+                    }
+                    finally
+                    {
+                        bitmap.UnlockBits(data);
                     }
 
                     // 添加边距
@@ -853,10 +730,12 @@ namespace ExportSlidesWithDPIDoing
                     right = Math.Min(width - 1, right + margin);
                     bottom = Math.Min(height - 1, bottom + margin);
 
-                    // 如果找不到非白色区域，返回原图
-                    if (left >= right || top >= bottom)
+                    // 整页为白色时保留原始尺寸；单像素内容也必须能被正确保留。
+                    if (left == width)
                     {
-                        return null;
+                        var unchanged = new System.Drawing.Bitmap(bitmap);
+                        unchanged.SetResolution(image.HorizontalResolution, image.VerticalResolution);
+                        return unchanged;
                     }
 
                     // 创建裁剪后的图片
@@ -880,23 +759,20 @@ namespace ExportSlidesWithDPIDoing
             }
             catch (Exception ex)
             {
-                ShowMessageBox(
-                    text: $"裁剪白边时发生错误：{ex.Message}",
-                    caption: "裁剪错误",
-                    buttons: MessageBoxButtons.OK,
-                    icon: MessageBoxIcon.Error
-                );
-                return null;
+                // 裁剪失败不应丢失已成功渲染的页面，降级为保留原图。
+                Debug.WriteLine($"裁剪白边失败，保留原图：{ex}");
+                return new System.Drawing.Bitmap(image);
             }
         }
 
-        private bool IsWhitePixel(System.Drawing.Color pixel)
+        private static bool IsWhitePixel(byte blue, byte green, byte red, byte alpha)
         {
-            // 判断像素是否为白色（允许一定的容差）
+            // 透明像素与接近白色的像素都视为可裁切的背景。
             const int tolerance = 10;
-            return Math.Abs(pixel.R - 255) <= tolerance &&
-                   Math.Abs(pixel.G - 255) <= tolerance &&
-                   Math.Abs(pixel.B - 255) <= tolerance;
+            return alpha <= tolerance ||
+                   (red >= 255 - tolerance &&
+                    green >= 255 - tolerance &&
+                    blue >= 255 - tolerance);
         }
 
         private System.Drawing.Imaging.ImageFormat GetImageFormat(string format)
@@ -918,6 +794,15 @@ namespace ExportSlidesWithDPIDoing
 
         private System.Drawing.Imaging.EncoderParameters GetEncoderParameters(string format)
         {
+            if (format.ToLower() == "jpg")
+            {
+                var encoderParams = new System.Drawing.Imaging.EncoderParameters(1);
+                encoderParams.Param[0] = new System.Drawing.Imaging.EncoderParameter(
+                    System.Drawing.Imaging.Encoder.Quality,
+                    100L
+                );
+                return encoderParams;
+            }
             if (format.ToLower() == "tif")
             {
                 var encoderParams = new System.Drawing.Imaging.EncoderParameters(1);
@@ -983,73 +868,14 @@ namespace ExportSlidesWithDPIDoing
         }
         #endregion
 
-        #region 核心功能
-
-        private bool ExportSlide(PowerPoint.Presentation pres, int slideNumber)
-        {
-            try
-            {
-                if (slideNumber < 1 || slideNumber > pres.Slides.Count)
-                    return false;
-
-                var slide = pres.Slides[slideNumber];
-                string extension = exportFormat.ToLower() == "tif" ? "tif" : exportFormat;
-                string fileName = $"{Path.GetFileNameWithoutExtension(pres.Name)}_Slide{slideNumber}_{DateTime.Now:yyyyMMddHHmmss}.{extension}";
-                string fullPath = Path.Combine(saveFolderPath, fileName);
-
-                int baseWidth = (int)pres.PageSetup.SlideWidth;
-                int baseHeight = (int)pres.PageSetup.SlideHeight;
-                int outputWidth = (int)(baseWidth * currentDPI / 72.0);
-                int outputHeight = (int)(baseHeight * currentDPI / 72.0);
-
-                // 对于高DPI导出，使用临时文件进行优化
-                if (currentDPI >= 600)
-                {
-                    string tempPath = Path.Combine(Path.GetTempPath(), $"temp_{Guid.NewGuid()}.{extension}");
-                    try
-                    {
-                        slide.Export(tempPath, formatMap[extension], outputWidth, outputHeight);
-                        if (File.Exists(fullPath))
-                        {
-                            File.Delete(fullPath);
-                        }
-                        File.Move(tempPath, fullPath);
-                    }
-                    finally
-                    {
-                        if (File.Exists(tempPath))
-                        {
-                            File.Delete(tempPath);
-                        }
-                    }
-                }
-                else
-                {
-                    slide.Export(fullPath, formatMap[extension], outputWidth, outputHeight);
-                }
-                return true;
-            }
-            catch (Exception ex)
-            {
-                ShowMessageBox(
-                    text: $"幻灯片 {slideNumber} 导出失败：{ex.Message}",
-                    caption: "导出错误",
-                    buttons: MessageBoxButtons.OK,
-                    icon: MessageBoxIcon.Error
-                );
-                return false;
-            }
-        }
-        #endregion
-
         private void button3_Click(object sender, RibbonControlEventArgs e)
         {
             try
             {
                 DialogResult result = ShowMessageBox(
-                    text: "PPT输出图片\n\n" +
+                    text: "PPT 导出工具\n\n" +
                     "开发者：Shikun\n" +
-                    "版本：3.0.0\n" +
+                    "版本：6.0.0\n" +
                     "联系方式：shikun.creative@gmail.com\n\n" +
                     "是否访问开发者主页？",
                     caption: "开发者信息",
@@ -1076,13 +902,16 @@ namespace ExportSlidesWithDPIDoing
         private void button4_Click_1(object sender, RibbonControlEventArgs e)
         {
             ShowMessageBox(
-                text: "PPT输出图片：\n\n" +
+                text: "PPT 导出工具：\n\n" +
                 "基本功能：\n" +
-                "   - 支持多种导出格式\n" +
+                "   - 支持 PDF、JPG、PNG、BMP、TIF\n" +
                 "   - 灵活的 DPI 设置\n" +
                 "   - 灵活的导出范围选择\n" +
-                "   - 用户友好的界面\n" +
-                "   - 裁剪图片白边\n\n",
+                "   - 可裁剪图片与 PDF 的白边\n\n" +
+                "PDF 说明：\n" +
+                "   - 未勾选裁剪：使用 PowerPoint 原生矢量 PDF。\n" +
+                "   - 勾选裁剪：按所选 DPI 裁切后生成 PDF。\n" +
+                "   - 非连续页码导出时，为保留页码选择，会生成高分辨率图像 PDF。\n\n",
                 caption: "关于",
                 buttons: MessageBoxButtons.OK,
                 icon: MessageBoxIcon.Information
@@ -1126,78 +955,14 @@ namespace ExportSlidesWithDPIDoing
         {
             try
             {
-                using (var saveDialog = new SaveFileDialog())
+                string initialFolder = !string.IsNullOrEmpty(saveFolderPath) && Directory.Exists(saveFolderPath)
+                    ? saveFolderPath
+                    : Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+                string selectedFolder = SelectFolderWithPowerPoint(initialFolder);
+                if (!string.IsNullOrEmpty(selectedFolder))
                 {
-                    saveDialog.Title = "选择保存位置";
-                    saveDialog.Filter = "所有文件|*.*";
-                    saveDialog.FileName = "导出图片";
-                    saveDialog.InitialDirectory = !string.IsNullOrEmpty(saveFolderPath) && Directory.Exists(saveFolderPath) 
-                        ? saveFolderPath 
-                        : Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-
-                    if (saveDialog.ShowDialog() == DialogResult.OK)
-                    {
-                        string selectedPath = Path.GetDirectoryName(saveDialog.FileName);
-                        
-                        // 检查路径是否有效
-                        if (string.IsNullOrEmpty(selectedPath))
-                        {
-                            ShowMessageBox(
-                                text: "请选择有效的保存路径",
-                                caption: "路径无效",
-                                buttons: MessageBoxButtons.OK,
-                                icon: MessageBoxIcon.Warning
-                            );
-                            return;
-                        }
-
-                        // 检查路径是否可写
-                        try
-                        {
-                            string testFile = Path.Combine(selectedPath, "test_write.tmp");
-                            File.WriteAllText(testFile, "test");
-                            File.Delete(testFile);
-                        }
-                        catch (Exception ex)
-                        {
-                            ShowMessageBox(
-                                text: $"所选路径没有写入权限：{ex.Message}\n请选择其他路径",
-                                caption: "权限错误",
-                                buttons: MessageBoxButtons.OK,
-                                icon: MessageBoxIcon.Error
-                            );
-                            return;
-                        }
-
-                        // 检查磁盘空间
-                        try
-                        {
-                            var drive = new DriveInfo(Path.GetPathRoot(selectedPath));
-                            if (drive.AvailableFreeSpace < 1024 * 1024 * 100) // 100MB
-                            {
-                                ShowMessageBox(
-                                    text: "所选磁盘空间不足，请确保有至少100MB的可用空间",
-                                    caption: "空间不足",
-                                    buttons: MessageBoxButtons.OK,
-                                    icon: MessageBoxIcon.Warning
-                                );
-                                return;
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            ShowMessageBox(
-                                text: $"检查磁盘空间时出错：{ex.Message}\n请选择其他路径",
-                                caption: "磁盘错误",
-                                buttons: MessageBoxButtons.OK,
-                                icon: MessageBoxIcon.Error
-                            );
-                            return;
-                        }
-
-                        // 所有检查都通过，直接保存路径
-                        saveFolderPath = selectedPath;
-                    }
+                    saveFolderPath = selectedFolder;
+                    EnsureOutputFolderIsWritable();
                 }
             }
             catch (Exception ex)
@@ -1209,6 +974,37 @@ namespace ExportSlidesWithDPIDoing
                     icon: MessageBoxIcon.Error
                 );
             }
+        }
+
+        private string SelectFolderWithPowerPoint(string initialFolder)
+        {
+            object dialogObject = null;
+            try
+            {
+                // PowerPoint's FileDialog matches the Office-native file/folder picker UI.
+                dynamic powerPoint = app;
+                dialogObject = powerPoint.FileDialog(Office.MsoFileDialogType.msoFileDialogFolderPicker);
+                dynamic dialog = dialogObject;
+                dialog.Title = "选择导出文件夹";
+                dialog.ButtonName = "选择文件夹";
+                dialog.InitialFileName = initialFolder.EndsWith(Path.DirectorySeparatorChar.ToString())
+                    ? initialFolder
+                    : initialFolder + Path.DirectorySeparatorChar;
+                if (dialog.Show() != -1) return null;
+
+                dynamic selectedItems = dialog.SelectedItems;
+                return Convert.ToString(selectedItems[1]);
+            }
+            finally
+            {
+                ReleaseComObject(dialogObject);
+            }
+        }
+
+        private static void ReleaseComObject(object value)
+        {
+            if (value != null && System.Runtime.InteropServices.Marshal.IsComObject(value))
+                System.Runtime.InteropServices.Marshal.FinalReleaseComObject(value);
         }
 
         private void button6_Click_1(object sender, RibbonControlEventArgs e)
@@ -1228,19 +1024,20 @@ namespace ExportSlidesWithDPIDoing
             {
                 using (var saveDialog = new SaveFileDialog())
                 {
-                    saveDialog.Title = "选择图片保存位置";
-                    saveDialog.Filter = "JPEG图片|*.jpg|PNG图片|*.png|BMP图片|*.bmp|TIFF图片|*.tif|所有文件|*.*";
-                    // 根据当前图片格式设置默认文件名和扩展名
+                    saveDialog.Title = "选择导出文件保存位置";
+                    saveDialog.Filter = "PDF 文件|*.pdf|JPEG 图片|*.jpg|PNG 图片|*.png|BMP 图片|*.bmp|TIFF 图片|*.tif|所有文件|*.*";
+                    // 根据当前导出格式设置默认文件名和扩展名
                     string ext = exportFormat.ToLower();
                     string defaultName = "Fig." + ext;
                     saveDialog.FileName = defaultName;
                     // 设置FilterIndex与格式对应
                     switch (ext)
                     {
-                        case "jpg": saveDialog.FilterIndex = 1; break;
-                        case "png": saveDialog.FilterIndex = 2; break;
-                        case "bmp": saveDialog.FilterIndex = 3; break;
-                        case "tif": saveDialog.FilterIndex = 4; break;
+                        case "pdf": saveDialog.FilterIndex = 1; break;
+                        case "jpg": saveDialog.FilterIndex = 2; break;
+                        case "png": saveDialog.FilterIndex = 3; break;
+                        case "bmp": saveDialog.FilterIndex = 4; break;
+                        case "tif": saveDialog.FilterIndex = 5; break;
                         default: saveDialog.FilterIndex = 1; break;
                     }
                     saveDialog.InitialDirectory = !string.IsNullOrEmpty(saveFolderPath) && Directory.Exists(saveFolderPath) 
@@ -1360,11 +1157,11 @@ namespace ExportSlidesWithDPIDoing
                         try
                         {
                             saveFolderPath = selectedPath;
-                            selectedImageFileName = selectedFileName;
+                            selectedExportFileName = selectedFileName;
                             
                             // 设置导出格式为选择的文件格式
                             string extension = Path.GetExtension(selectedFileName).TrimStart('.').ToLower();
-                            if (formatMap.ContainsKey(extension))
+                            if (imageFormatMap.ContainsKey(extension) || extension == "pdf")
                             {
                                 exportFormat = extension;
                                 comboBox2.Text = extension.ToUpper();
@@ -1372,7 +1169,7 @@ namespace ExportSlidesWithDPIDoing
                             else
                             {
                                 ShowMessageBox(
-                                    text: "不支持的文件格式，请选择JPG、PNG、BMP或TIF格式",
+                                    text: "不支持的文件格式，请选择 PDF、JPG、PNG、BMP 或 TIF 格式",
                                     caption: "格式错误",
                                     buttons: MessageBoxButtons.OK,
                                     icon: MessageBoxIcon.Warning
@@ -1414,12 +1211,9 @@ namespace ExportSlidesWithDPIDoing
         private Label statusLabel;
         public int TotalSlides { get; set; }
         private int currentProgress = 0;
-        private SynchronizationContext uiContext;
-
         public ProgressForm()
         {
             InitializeComponents();
-            uiContext = SynchronizationContext.Current;
         }
 
         private void InitializeComponents()
@@ -1452,21 +1246,13 @@ namespace ExportSlidesWithDPIDoing
 
         public void UpdateProgress()
         {
-            if (uiContext != null)
+            if (!IsDisposed && TotalSlides > 0)
             {
-                uiContext.Post(_ =>
-                {
-                    if (!this.IsDisposed)
-                    {
-                        currentProgress++;
-                        int percentage = (int)((float)currentProgress / TotalSlides * 100);
-                        progressBar.Value = percentage;
-                        statusLabel.Text = $"正在导出... {currentProgress}/{TotalSlides} ({percentage}%)";
-                    }
-                }, null);
+                currentProgress++;
+                int percentage = Math.Min(100, (int)((float)currentProgress / TotalSlides * 100));
+                progressBar.Value = percentage;
+                statusLabel.Text = $"正在导出... {currentProgress}/{TotalSlides} ({percentage}%)";
             }
         }
     }
 }
-
-
