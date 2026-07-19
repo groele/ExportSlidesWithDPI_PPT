@@ -20,6 +20,9 @@ namespace ExportSlidesWithDPIDoing
     {
         private PowerPoint.Application app;
         private int currentDPI = 300;
+        // Raster PDF pages are lossless, but their source still needs sufficient sampling density.
+        // Do not let a low image-DPI setting turn a cropped or non-contiguous PDF into a blurry PDF.
+        private const int MinimumRasterPdfDpi = 300;
         private string exportFormat = "jpg";
         private string saveFolderPath = string.Empty;
         private List<int> selectedPages = new List<int>();
@@ -538,8 +541,11 @@ namespace ExportSlidesWithDPIDoing
                     // Keep the user's non-contiguous page selection by using the raster-PDF path.
                     progressForm = new ProgressForm { TotalSlides = pages.Count };
                     progressForm.Show();
-                    int outputWidth = (int)(pres.PageSetup.SlideWidth * currentDPI / 72.0);
-                    int outputHeight = (int)(pres.PageSetup.SlideHeight * currentDPI / 72.0);
+                    // Cropped pages are rasterized. 300 DPI is the quality floor; higher user
+                    // selections (for example 600 DPI) are retained exactly.
+                    int pdfDpi = Math.Max(currentDPI, MinimumRasterPdfDpi);
+                    int outputWidth = (int)(pres.PageSetup.SlideWidth * pdfDpi / 72.0);
+                    int outputHeight = (int)(pres.PageSetup.SlideHeight * pdfDpi / 72.0);
                     using (var pdf = new RasterPdfDocument(stagingPath, pages.Count))
                     {
                         foreach (int slideNumber in pages)
@@ -552,7 +558,7 @@ namespace ExportSlidesWithDPIDoing
                                     ? CropWhiteSpace(image, whiteSpaceMargin)
                                     : new System.Drawing.Bitmap(image))
                                 {
-                                    pdf.AddPage(croppedImage, currentDPI);
+                                    pdf.AddPage(croppedImage, pdfDpi);
                                 }
                             }
                             progressForm.UpdateProgress();
@@ -682,7 +688,7 @@ namespace ExportSlidesWithDPIDoing
                     using (var graphics = System.Drawing.Graphics.FromImage(bitmap))
                     {
                         graphics.CompositingMode = System.Drawing.Drawing2D.CompositingMode.SourceCopy;
-                        graphics.DrawImageUnscaled(image, 0, 0);
+                        graphics.DrawImage(image, 0, 0, width, height);
                     }
 
                     // 找到非白色区域的边界
@@ -724,19 +730,21 @@ namespace ExportSlidesWithDPIDoing
                         bitmap.UnlockBits(data);
                     }
 
-                    // 添加边距
-                    left = Math.Max(0, left - margin);
-                    top = Math.Max(0, top - margin);
-                    right = Math.Min(width - 1, right + margin);
-                    bottom = Math.Min(height - 1, bottom + margin);
-
-                    // 整页为白色时保留原始尺寸；单像素内容也必须能被正确保留。
+                    // An entirely blank slide has no crop rectangle. Handle it before applying
+                    // the requested margin, otherwise a positive margin can make the rectangle
+                    // invalid and force the exception fallback below.
                     if (left == width)
                     {
                         var unchanged = new System.Drawing.Bitmap(bitmap);
                         unchanged.SetResolution(image.HorizontalResolution, image.VerticalResolution);
                         return unchanged;
                     }
+
+                    // 添加边距
+                    left = Math.Max(0, left - margin);
+                    top = Math.Max(0, top - margin);
+                    right = Math.Min(width - 1, right + margin);
+                    bottom = Math.Min(height - 1, bottom + margin);
 
                     // 创建裁剪后的图片
                     int newWidth = right - left + 1;
@@ -875,7 +883,7 @@ namespace ExportSlidesWithDPIDoing
                 DialogResult result = ShowMessageBox(
                     text: "PPT 导出工具\n\n" +
                     "开发者：Shikun\n" +
-                    "版本：6.0.0\n" +
+                    "版本：6.0.1\n" +
                     "联系方式：shikun.creative@gmail.com\n\n" +
                     "是否访问开发者主页？",
                     caption: "开发者信息",

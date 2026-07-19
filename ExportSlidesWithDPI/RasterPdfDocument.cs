@@ -103,7 +103,7 @@ namespace ExportSlidesWithDPIDoing
             using (var graphics = Graphics.FromImage(flattened))
             {
                 graphics.Clear(Color.White);
-                graphics.DrawImageUnscaled(image, 0, 0);
+                graphics.DrawImage(image, 0, 0, image.Width, image.Height);
 
                 var rectangle = new Rectangle(0, 0, flattened.Width, flattened.Height);
                 var data = flattened.LockBits(rectangle, ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);

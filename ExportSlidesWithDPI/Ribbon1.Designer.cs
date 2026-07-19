@@ -115,7 +115,7 @@
             // 
             this.comboBox1.Label = "分辨率";
             this.comboBox1.Name = "comboBox1";
-            this.comboBox1.SuperTip = "图片导出与“PDF + 裁剪白边”使用此分辨率；不裁剪的 PDF 保持矢量内容。";
+            this.comboBox1.SuperTip = "图片导出与栅格 PDF 使用此分辨率；裁剪或非连续页面的 PDF 至少以 300 DPI 输出，不裁剪的连续 PDF 保持矢量内容。";
             this.comboBox1.Text = null;
             // 
             // group3
@@ -128,7 +128,7 @@
             // 
             this.comboBox2.Label = "格式";
             this.comboBox2.Name = "comboBox2";
-            this.comboBox2.SuperTip = "支持 PDF、JPG、PNG、BMP、TIF。PDF 裁剪时会按所选 DPI 生成。";
+            this.comboBox2.SuperTip = "支持 PDF、JPG、PNG、BMP、TIF。PDF 裁剪或非连续页面会按所选 DPI（最低 300 DPI）无损写入。";
             this.comboBox2.Text = null;
             // 
             // group4
